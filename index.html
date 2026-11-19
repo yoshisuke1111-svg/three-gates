@@ -216,7 +216,7 @@
 <div class="site">
   <header class="masthead">
     <div class="mark">UNNAMED / THREE</div>
-    <span class="version">PROTOTYPE 0.2<br>WEB BUILD</span>
+    <span class="version">PROTOTYPE 0.3<br>WEB BUILD</span>
   </header>
 
   <main id="homeView">
@@ -295,64 +295,266 @@
 <script>
 (() => {
   'use strict';
-  // チュートリアルは正誤選択でなく、独立した10個の小さな数字謎。
+  // チュートリアルは正誤選択でなく、数列・五十音・図形などを利用する10個の小謎。
   // 解答に共通する性質を後半の仕掛けに利用できるようにしている。
   const QUESTIONS = [
-    { title: '飛び石', clue: '1  →  3  →  5  →  ?  →  9', prompt: '空欄に入る数は？', answer: 7, hint: '進むたびに同じ数だけ増える。' },
-    { title: '倍になる列', clue: '2  →  4  →  8  →  ?  →  32', prompt: '空欄に入る数は？', answer: 16, hint: '左隣の数との比を調べよう。' },
-    { title: '前の二つ', clue: '1   1   2   3   5   8   ?', prompt: '次に置く数は？', answer: 13, hint: '直前の二つの数を使う。' },
-    { title: '九つの部屋', clue: '1   2   3\n4   ?   6\n7   8   9', prompt: '真ん中の部屋に入る数は？', answer: 5, hint: '上から、左から順に番号がついている。' },
-    { title: 'つながった壁', clue: '┌───┬───┬───┐\n│   │   │   │\n└───┴───┴───┘', prompt: 'この図を構成する短い辺は合計何本？ 共通する辺は一度だけ数える。', answer: 10, hint: '上側と下側、縦の線を別々に数える。' },
-    { title: '見えない袋', clue: '赤 ● ● ●\n青 ● ●\n白 ●', prompt: '袋から石を一つずつ取り出す。最悪の場合でも赤を必ず1つ得るには、最低何個取り出す？', answer: 4, hint: 'まず赤以外の石だけを引いた場合を考える。' },
-    { title: '平方の列', clue: '1  →  4  →  9  →  16  →  ?', prompt: '空欄に入る数は？', answer: 25, hint: '1×1、2×2、3×3……。' },
-    { title: '時計の針', clue: '12   →   3', prompt: '時計の短針が12時の位置から3時の位置まで動くと、何度回転する？', answer: 90, hint: '時計の一周は360度。' },
-    { title: '四段の階段', clue: '□\n□□\n□□□\n□□□□', prompt: '4段の階段を、1段または2段ずつ上る。順番の違いも区別すると何通り？', answer: 5, hint: '1+1+1+1、1+1+2などを数えよう。' },
-    { title: '外側のマス', clue: '■■■■\n■□□■\n■□□■\n■■■■', prompt: '■で示した外周のマスは合計何個？', answer: 12, hint: '4×4のマス目から、内側の2×2を引く。' }
-  ];
+  {
+    "title": "足し算の矢印",
+    "clue": "3 ──→ 7 ──→ 11 ──→ ? ──→ 19",
+    "prompt": "同じ規則で進む。? に入る数は？",
+    "answer": 15,
+    "hint": "ひとつ先へ進むとき、何を足している？"
+  },
+  {
+    "title": "掛け算の矢印",
+    "clue": "2 ──→ 6 ──→ 18 ──→ ? ──→ 162",
+    "prompt": "同じ規則で進む。? に入る数は？",
+    "answer": 54,
+    "hint": "差ではなく、隣り合う数の比を見よう。"
+  },
+  {
+    "title": "ひらがなの棚",
+    "clue": "あ  い  う  え  お\nか  き  く  け  こ\nさ  し  す  せ  そ\n\nあ＝1　か＝6　さ＝11",
+    "prompt": "左上の「あ」を1として五十音順に数える。「か」と「せ」の番号を足すと？",
+    "answer": 20,
+    "hint": "「せ」は、さ行の4番目。"
+  },
+  {
+    "title": "段違いの表",
+    "clue": " 2     5     8\n11     ?    17\n20    23    26",
+    "prompt": "縦にも横にも同じ規則がある。? は？",
+    "answer": 14,
+    "hint": "右に進むと3増え、下に進むと9増える。"
+  },
+  {
+    "title": "二つの重さ",
+    "clue": "○ + ○ + △ ＝ 11\n○ + △      ＝  8\n\n○ ＝  ?",
+    "prompt": "同じ記号は同じ重さ。○ の重さはいくつ？",
+    "answer": 3,
+    "hint": "上の式から下の式を引いてみよう。"
+  },
+  {
+    "title": "針が指す場所",
+    "clue": "12 ──→ 3 ──→ 6 ──→ ? ──→ 12",
+    "prompt": "時計の文字盤を同じ角度ずつ進む。? に入る数字は？",
+    "answer": 9,
+    "hint": "毎回90度ずつ進む。"
+  },
+  {
+    "title": "格子の最短路",
+    "clue": "S ── □ ── □\n│    │    │\n□ ── □ ── □\n│    │    │\n□ ── □ ── G",
+    "prompt": "SからGまで、右または下へ1辺ずつ進む。必要な最小の移動回数は？",
+    "answer": 4,
+    "hint": "右に2回、下に2回進めばよい。"
+  },
+  {
+    "title": "折りたたむ番号",
+    "clue": "       [2]\n[3]   [1]   [4]   [6]\n       [5]",
+    "prompt": "これは立方体の展開図。折りたたむと「1」の反対側は何番？",
+    "answer": 6,
+    "hint": "横一列に並んだ4枚は側面を一周する。"
+  },
+  {
+    "title": "鏡の数字",
+    "clue": "12  ─鏡→  21\n45  ─鏡→  54\n67  ─鏡→  ?",
+    "prompt": "数字の順番を反対に並べる。? は？",
+    "answer": 76,
+    "hint": "左の2桁を逆から読もう。"
+  },
+  {
+    "title": "増える段差",
+    "clue": "1 ──→ 3 ──→ 6 ──→ 10 ──→ ?",
+    "prompt": "矢印ごとに増える数も1ずつ増えている。? は？",
+    "answer": 15,
+    "hint": "増加量は2、3、4、その次は5。"
+  }
+];
   // ここで使う0/1は正誤ではない。各「数値解答」の偶奇に由来する。
   // 将来の謎に備え、現時点ではこの規則をプレイヤーへ説明しない。
   const tutorialBits = QUESTIONS.map(q => String(q.answer % 2)).join('');
   const tutorialFirstCode = String(parseInt(tutorialBits, 2));
   const STAGES = {
-    '1': {
-      [tutorialFirstCode]: {
-        type: 'puzzle', title: '第一の記録', path: 'SECTION 01 / RECORD A',
-        lines: [
-          '欠けた数字は、すでにある数字の関係から見つけられる。',
-          '横だけでなく、縦にも目を向けよ。'
-        ],
-        figure: ' 2    3    5\n 4    6   10\n 6    9    ?',
-        prompt: '「?」に入る数はいくつか。', answer: 15,
-        result: { zone: 2, code: 'CYCLE', text: '第二の区画で呼び出せる新しい記録が見つかった。' }
+  "1": {
+    "ECHO": {
+      "type": "puzzle",
+      "title": "断続した音",
+      "path": "SECTION 01 / AUDIO LOG",
+      "lines": [
+        "装置に残されているのは、短い音と長い音だけだった。",
+        "記録の区切りは残っている。音の長さを文字に戻せ。"
+      ],
+      "figure": "1  /  00  /  11  /  0",
+      "prompt": "0は短音「・」、1は長音「—」。4群が表す英単語を入力せよ。",
+      "answer": "TIME",
+      "result": {
+        "zone": 2,
+        "code": "TIME",
+        "text": "時刻を扱う記録へつながった。"
       },
-      'ECHO': {
-        type: 'text', title: '回帰', path: 'SECTION 01 / RECORD B',
-        lines: [
-          '一度開いたものが、再び閉じている。',
-          '同じ入口に戻ったつもりだった。',
-          'しかし、何かが以前と異なっている。',
-          '最初に解いたものも、記録から消えたわけではない。'
-        ],
-        note: '※この先の本編は制作中です。'
-      }
-    },
-    '2': {
-      'CYCLE': {
-        type: 'puzzle', title: '第二の記録', path: 'SECTION 02 / RECORD A',
-        lines: [
-          '三つの輪を持つ箱の図面がある。',
-          '輪には0から9までの数字が一つずつ刻まれている。'
-        ],
-        figure: '[ LEFT ]   [ CENTER ]   [ RIGHT ]',
-        prompt: '中央は0。左と右の数の和は3、左は右より1大きい。左・中央・右の順で3桁の数字として入力せよ。',
-        answer: 201,
-        result: { zone: 3, code: 'OPEN', text: '箱の呼出コードが見つかった。輪の並びも覚えておこう。' }
-      }
-    },
-    '3': {
-      'OPEN': { type: 'device', title: '封印された箱', path: 'SECTION 03 / APPARATUS' }
+      "alternatives": [
+        {
+          "answer": "EMIT",
+          "result": {
+            "zone": 2,
+            "code": "EMIT",
+            "text": "発信装置へつながった。元の記録とは別の応答がある。"
+          }
+        }
+      ]
     }
-  };
+  },
+  "2": {
+    "CYCLE": {
+      "type": "puzzle",
+      "title": "第二の記録",
+      "path": "SECTION 02 / RECORD A",
+      "lines": [
+        "箱には三つの輪がある。",
+        "輪の番号は0から9まで。中央の輪だけは0の位置に固定されている。"
+      ],
+      "figure": "[ LEFT ]   [ CENTER ]   [ RIGHT ]",
+      "prompt": "左と右の数の和は3。左は右より1大きい。左・中央・右の順に3桁の数を入力せよ。",
+      "answer": 201,
+      "result": {
+        "zone": 3,
+        "code": "OPEN",
+        "text": "解錠装置の呼出コードが現れた。輪の並びを覚えておこう。"
+      }
+    },
+    "TIME": {
+      "type": "puzzle",
+      "title": "二つの時計",
+      "path": "SECTION 02 / CHRONOMETER",
+      "lines": [
+        "二つの時計は矢印を一回押すたびに、それぞれ違う速さで進む。",
+        "同じ時刻になった瞬間、表示が切り替わる。"
+      ],
+      "figure": "左  03:00 → 03:15 → 03:30 → …\n右  02:00 → 02:30 → 03:00 → …",
+      "prompt": "同時に矢印を何回押せば、左右が初めて同じ時刻になる？",
+      "answer": 4,
+      "result": {
+        "zone": 3,
+        "code": "PATH",
+        "text": "二つの時計がそろい、隠されていた通路が表示された。"
+      }
+    },
+    "EMIT": {
+      "type": "puzzle",
+      "title": "信号の送出",
+      "path": "SECTION 02 / EMITTER",
+      "lines": [
+        "発信装置には、六つの入力桁が残されている。",
+        "この装置は、記録の裏側でしか動作しない。"
+      ],
+      "figure": "受信   1 / 00 / 11 / 0\n送信   ? ? ? ? ? ?",
+      "prompt": "受信した六つの0と1をすべて反転し、区切りを外して送信せよ。先頭の0も残すこと。",
+      "answer": "011001",
+      "result": {
+        "zone": 3,
+        "code": "MIRROR",
+        "text": "反転した信号が届いた。もう一つの記録が開いた。"
+      }
+    },
+    "HUSH": {
+      "type": "text",
+      "title": "止まった記録",
+      "path": "SECTION 02 / SILENCE",
+      "lines": [
+        "道順は正しかった。",
+        "しかし、道を通ることだけが唯一の答えとは限らない。",
+        "同じものを、裏側から見た者の記録が残っている。"
+      ],
+      "note": "ほかにも開ける記録がある。"
+    }
+  },
+  "3": {
+    "OPEN": {
+      "type": "device",
+      "title": "封印された箱",
+      "path": "SECTION 03 / APPARATUS"
+    },
+    "PATH": {
+      "type": "puzzle",
+      "title": "一本道の数字",
+      "path": "SECTION 03 / HIDDEN ROUTE",
+      "lines": [
+        "白い道は途中で分かれているが、一方は行き止まりだ。",
+        "壁を通り抜けず、SからGへたどり着け。"
+      ],
+      "figure": "S   2   ■   ■   ■\n■   3   ■   9   ■\n■   4   5   6   ■\n■   ■   ■   7   G",
+      "prompt": "SからGへの道で、通った数字だけを足せ。行き止まりには戻らない。",
+      "answer": 27,
+      "result": {
+        "zone": 2,
+        "code": "HUSH",
+        "text": "行き止まりの向こうに、別の記録の呼出コードがあった。"
+      }
+    },
+    "MIRROR": {
+      "type": "puzzle",
+      "title": "十枚の裏面",
+      "path": "SECTION 03 / REVERSE INDEX",
+      "lines": [
+        "ここには十枚の札がある。",
+        "一度終えた十の問題も、記録からは消えていない。"
+      ],
+      "figure": "01  02  03  04  05\n06  07  08  09  10\n\n奇数＝1  /  偶数＝0\n       1 ⇄ 0",
+      "prompt": "チュートリアル10問の数値解答を解いた順に並べ、奇数を1、偶数を0とする。10桁を反転して二進数として読んだ十進数はいくつ？",
+      "answer": 462,
+      "result": {
+        "zone": 1,
+        "code": "462",
+        "text": "区画1のもう一つの入口が見つかった。"
+      }
+    },
+    "ORIGIN": {
+      "type": "text",
+      "title": "未完の終端",
+      "path": "SECTION 03 / REMAINDER",
+      "lines": [
+        "初めて触れた十の問題は、最初から記録の一部だった。",
+        "一つの正解が、すべての解答を意味するわけではない。",
+        "記録はまだ完成していない。"
+      ],
+      "note": "この続きは制作中。"
+    }
+  }
+};
+  STAGES['1'][tutorialFirstCode] = {
+  "type": "puzzle",
+  "title": "交わる矢印",
+  "path": "SECTION 01 / RECORD A",
+  "lines": [
+    "上下の矢印は、それぞれ別の規則に従っている。",
+    "二本の矢印が右端で合流するとき、数字も一つになる。"
+  ],
+  "figure": "上  3  →  7  →  11  →   ?\n                         ↘\n                          ＋ ＝ ?\n                         ↗\n下  2  →  6  →  18  →   ?",
+  "prompt": "上下の最後の数を足すといくつ？",
+  "answer": 69,
+  "result": {
+    "zone": 2,
+    "code": "CYCLE",
+    "text": "二つの列がひとつになり、次の区画を示す語が現れた。"
+  }
+};
+  const tutorialComplementCode = String((2 ** QUESTIONS.length - 1) - Number(tutorialFirstCode));
+  STAGES['1'][tutorialComplementCode] = {
+  "type": "puzzle",
+  "title": "裏の入口",
+  "path": "SECTION 01 / REVERSED RECORD",
+  "lines": [
+    "表と裏を入れ替えただけで、別の入口が開いた。",
+    "ここにある階段は、進むたびに段差が一つずつ大きくなる。"
+  ],
+  "figure": "4 → 7 → 11 → 16 → ?",
+  "prompt": "次の数字を入力せよ。",
+  "answer": 22,
+  "result": {
+    "zone": 3,
+    "code": "ORIGIN",
+    "text": "最初にあった場所へつながる最後の記録が見つかった。"
+  }
+};
   const homeView = document.getElementById('homeView');
   const sceneView = document.getElementById('sceneView');
   const content = document.getElementById('sceneContent');
@@ -476,7 +678,7 @@
           <p class="puzzle-prompt">${escapeHtml(stage.prompt)}</p>
           <form class="answer-form" id="puzzleAnswerForm" autocomplete="off">
             <label class="sr-only" for="puzzleAnswer">謎の答えとなる数値</label>
-            <input class="answer-number" id="puzzleAnswer" name="answer" inputmode="numeric" pattern="[0-9０-９]*" maxlength="8" placeholder="数値を入力" required aria-describedby="puzzleFeedback">
+            <input class="answer-number" id="puzzleAnswer" name="answer" inputmode="text" maxlength="12" spellcheck="false" autocapitalize="characters" placeholder="答えを入力" required aria-describedby="puzzleFeedback">
             <button type="submit" class="button button--gold">解答 ↗</button>
           </form>
           <div class="answer-message" id="puzzleFeedback" role="status" aria-live="polite"></div>
@@ -492,13 +694,15 @@
   }
   function validatePuzzle(input) {
     const el = document.getElementById('puzzleFeedback');
-    const n = normalizeNumber(input);
-    if (n !== activePuzzle.answer) {
+    const entered = input.trim().normalize('NFKC').replace(/\s+/g, '').toUpperCase();
+    const expected = String(activePuzzle.answer).toUpperCase();
+    const alternate = (activePuzzle.alternatives || []).find(item => String(item.answer).toUpperCase() === entered);
+    if (entered !== expected && !alternate) {
       puzzleErrors++;
       el.textContent = puzzleErrors > 1 ? '一致しない。図と条件をもう一度確認せよ。' : 'その値では開かない。';
       return;
     }
-    const win = activePuzzle.result;
+    const win = alternate ? alternate.result : activePuzzle.result;
     el.textContent = '';
     document.getElementById('puzzleAnswerForm').hidden = true;
     const box = document.getElementById('puzzleSolved');
