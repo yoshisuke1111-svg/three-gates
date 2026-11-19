@@ -122,9 +122,31 @@
     .tutorial-progress span.done { background: var(--goldBright); }
     .question-number { font: 11px var(--fontMono); color: var(--goldBright); letter-spacing: .17em; margin-bottom: 14px; }
     .question { font-size: clamp(19px,3.1vw,29px); line-height: 1.7; min-height: 110px; letter-spacing: .06em; margin: 0 0 23px; }
-    .answers { display: flex; gap: 13px; }
-    .answer { min-width: 100px; font-size: 29px; color: #e8e9e8; padding: 14px 32px; border: 1px solid #79818b; background: #1a2029; }
-    .answer:hover { background: #343e4a; border-color: #d6c39b; }
+    .question-clue {
+      padding: clamp(16px, 3vw, 28px); margin: 0 0 20px;
+      border: 1px solid #6c75827d; background: #0b1015; color: #e4d7b9;
+      font: clamp(17px, 3.3vw, 28px)/1.8 var(--fontMono); letter-spacing: .08em;
+      white-space: pre; overflow-x: auto; text-align: center;
+    }
+    .question-description { font-size: clamp(15px, 2vw, 18px); margin: 0 0 18px; color: #d7d9dd; }
+    .answer-form { display: flex; max-width: 390px; gap: 10px; align-items: stretch; }
+    .answer-number {
+      width: 100%; min-width: 0; background: #080c12; color: #f5efe2;
+      border: 1px solid #8c96a2; padding: 11px 14px; font: 20px var(--fontMono);
+      letter-spacing: .08em; border-radius: 0;
+    }
+    .answer-number:focus { border-color: #e5cf9d; }
+    .hint-button { padding: 7px 0; margin-top: 7px; border: 0; background: none;
+      color: #e1c994; text-decoration: underline; text-underline-offset: 5px; font-size: 12px; }
+    .hint-content { color: #aeb7bc; font-size: 13px; padding: 12px 15px;
+      background: #1b222a; border-left: 2px solid #bba887; margin-top: 10px; }
+    .puzzle-figure { padding: 28px 15px; margin: 20px 0;
+      background: #10161e; border: 1px solid #6a7382;
+      color: #e6d3a5; text-align: center; font: clamp(18px,3.6vw,28px)/1.8 var(--fontMono);
+      white-space: pre; overflow-x: auto; }
+    .puzzle-prompt { font-size: 17px; margin: 26px 0 16px; }
+    .puzzle-output { margin-top: 22px; background: #1b211e; border: 1px solid #978566;
+      text-align: center; padding: 22px 18px; }
     .answer-message { min-height: 24px; font-size: 12px; color: #ca948e; margin-top: 16px; }
     .appear { animation: appearUp .3s ease-out both; }
     @keyframes appearUp { from { opacity: .15; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
@@ -180,7 +202,10 @@
       .scene-nav { padding: 18px 0 12px; }
       .scene-route { font-size: 8px; }
       .question { min-height: 130px; }
-      .answers .answer { flex:1; }
+      .answer-form { max-width: 100%; }
+      .answer-form .button { padding: 10px 14px; }
+      .question-clue { font-size: clamp(16px, 4.6vw, 23px); }
+      .puzzle-figure { font-size: clamp(16px, 4.4vw, 23px); }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -191,7 +216,7 @@
 <div class="site">
   <header class="masthead">
     <div class="mark">UNNAMED / THREE</div>
-    <span class="version">PROTOTYPE 0.1<br>LOCAL BUILD</span>
+    <span class="version">PROTOTYPE 0.2<br>WEB BUILD</span>
   </header>
 
   <main id="homeView">
@@ -206,7 +231,7 @@
         <div class="tutorial-seal" aria-hidden="true">十</div>
         <div>
           <div class="tutorial-title">チュートリアル</div>
-          <div class="small" id="tutorialStatus">全10問 ・ 未完了</div>
+          <div class="small" id="tutorialStatus">全10問 ・ 数字で答える</div>
         </div>
       </div>
       <button type="button" class="button" id="startTutorial">開始する ↗</button>
@@ -270,34 +295,35 @@
 <script>
 (() => {
   'use strict';
+  // チュートリアルは正誤選択でなく、独立した10個の小さな数字謎。
+  // 解答に共通する性質を後半の仕掛けに利用できるようにしている。
   const QUESTIONS = [
-    { text: '3² = 9', answer: true },
-    { text: '(−2) × (−3) = −6', answer: false },
-    { text: 'x + 5 = 8 の解は x = 3 である。', answer: true },
-    { text: '√49 = 7', answer: true },
-    { text: '三角形の内角の和は360°である。', answer: false },
-    { text: '0は素数である。', answer: false },
-    { text: 'y = 2x + 1 に x = 3 を代入すると y = 7 となる。', answer: true },
-    { text: '1/2 + 1/3 = 2/5', answer: false },
-    { text: 'a² − b² = (a − b)(a + b)', answer: true },
-    { text: '公平な6面サイコロで、偶数の出る確率は1/3である。', answer: false }
+    { title: '飛び石', clue: '1  →  3  →  5  →  ?  →  9', prompt: '空欄に入る数は？', answer: 7, hint: '進むたびに同じ数だけ増える。' },
+    { title: '倍になる列', clue: '2  →  4  →  8  →  ?  →  32', prompt: '空欄に入る数は？', answer: 16, hint: '左隣の数との比を調べよう。' },
+    { title: '前の二つ', clue: '1   1   2   3   5   8   ?', prompt: '次に置く数は？', answer: 13, hint: '直前の二つの数を使う。' },
+    { title: '九つの部屋', clue: '1   2   3\n4   ?   6\n7   8   9', prompt: '真ん中の部屋に入る数は？', answer: 5, hint: '上から、左から順に番号がついている。' },
+    { title: 'つながった壁', clue: '┌───┬───┬───┐\n│   │   │   │\n└───┴───┴───┘', prompt: 'この図を構成する短い辺は合計何本？ 共通する辺は一度だけ数える。', answer: 10, hint: '上側と下側、縦の線を別々に数える。' },
+    { title: '見えない袋', clue: '赤 ● ● ●\n青 ● ●\n白 ●', prompt: '袋から石を一つずつ取り出す。最悪の場合でも赤を必ず1つ得るには、最低何個取り出す？', answer: 4, hint: 'まず赤以外の石だけを引いた場合を考える。' },
+    { title: '平方の列', clue: '1  →  4  →  9  →  16  →  ?', prompt: '空欄に入る数は？', answer: 25, hint: '1×1、2×2、3×3……。' },
+    { title: '時計の針', clue: '12   →   3', prompt: '時計の短針が12時の位置から3時の位置まで動くと、何度回転する？', answer: 90, hint: '時計の一周は360度。' },
+    { title: '四段の階段', clue: '□\n□□\n□□□\n□□□□', prompt: '4段の階段を、1段または2段ずつ上る。順番の違いも区別すると何通り？', answer: 5, hint: '1+1+1+1、1+1+2などを数えよう。' },
+    { title: '外側のマス', clue: '■■■■\n■□□■\n■□□■\n■■■■', prompt: '■で示した外周のマスは合計何個？', answer: 12, hint: '4×4のマス目から、内側の2×2を引く。' }
   ];
-  // チュートリアルの正誤列にも、後の拡張に使える数学的な構造がある。
-  // ゲーム内では答え合わせ後、最初の入場コードだけを提示する。
-  const tutorialBits = QUESTIONS.map(q => q.answer ? '1' : '0').join('');
+  // ここで使う0/1は正誤ではない。各「数値解答」の偶奇に由来する。
+  // 将来の謎に備え、現時点ではこの規則をプレイヤーへ説明しない。
+  const tutorialBits = QUESTIONS.map(q => String(q.answer % 2)).join('');
   const tutorialFirstCode = String(parseInt(tutorialBits, 2));
   const STAGES = {
     '1': {
       [tutorialFirstCode]: {
-        type: 'text', title: '第一の記録', path: 'SECTION 01 / RECORD A',
+        type: 'puzzle', title: '第一の記録', path: 'SECTION 01 / RECORD A',
         lines: [
-          '記録が一件、見つかった。',
-          'これは問題ではない。次の記録への索引である。',
-          'いずれの場所も、同じ入口に戻る。',
-          '区画2の呼出コード：',
-          { text: 'CYCLE', important: true }
+          '欠けた数字は、すでにある数字の関係から見つけられる。',
+          '横だけでなく、縦にも目を向けよ。'
         ],
-        note: '※ここから先の謎本文は仮置きです。仕組みの動作確認に使えます。'
+        figure: ' 2    3    5\n 4    6   10\n 6    9    ?',
+        prompt: '「?」に入る数はいくつか。', answer: 15,
+        result: { zone: 2, code: 'CYCLE', text: '第二の区画で呼び出せる新しい記録が見つかった。' }
       },
       'ECHO': {
         type: 'text', title: '回帰', path: 'SECTION 01 / RECORD B',
@@ -305,22 +331,22 @@
           '一度開いたものが、再び閉じている。',
           '同じ入口に戻ったつもりだった。',
           'しかし、何かが以前と異なっている。',
-          '次の本編の謎は、この記録から分岐させる。'
+          '最初に解いたものも、記録から消えたわけではない。'
         ],
-        note: '※この先は制作時に数学的な本編の謎へ差し替えます。'
+        note: '※この先の本編は制作中です。'
       }
     },
     '2': {
       'CYCLE': {
-        type: 'text', title: '第二の記録', path: 'SECTION 02 / RECORD A',
+        type: 'puzzle', title: '第二の記録', path: 'SECTION 02 / RECORD A',
         lines: [
-          '輪は三つ。針はそれぞれ独立している。',
-          '左から順に、二、零、一。',
-          '次の場所は区画3。',
-          '区画3の呼出コード：',
-          { text: 'OPEN', important: true }
+          '三つの輪を持つ箱の図面がある。',
+          '輪には0から9までの数字が一つずつ刻まれている。'
         ],
-        note: '※箱ギミックを確認するための仮の記録です。後で難しい謎に置き換えられます。'
+        figure: '[ LEFT ]   [ CENTER ]   [ RIGHT ]',
+        prompt: '中央は0。左と右の数の和は3、左は右より1大きい。左・中央・右の順で3桁の数字として入力せよ。',
+        answer: 201,
+        result: { zone: 3, code: 'OPEN', text: '箱の呼出コードが見つかった。輪の並びも覚えておこう。' }
       }
     },
     '3': {
@@ -342,13 +368,16 @@
   let dials = [0, 0, 0];
   let completedTutorial = false;
   let boxSolved = false;
+  let tutorialErrors = 0;
+  let puzzleErrors = 0;
+  let activePuzzle = null;
   try {
     completedTutorial = localStorage.getItem('three_gates_tutorial_done') === 'yes';
     boxSolved = localStorage.getItem('three_gates_box_done') === 'yes';
   } catch (_) { /* ローカルファイル閲覧時のストレージ制限にも対応 */ }
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
   function setTutorialHeader() {
-    tutorialStatus.textContent = completedTutorial ? '全10問 ・ 完了済み / 再挑戦可能' : '全10問 ・ 未完了';
+    tutorialStatus.textContent = completedTutorial ? '全10問 ・ 完了済み / 再挑戦可能' : '全10問 ・ 数字で答える';
     tutorialButton.textContent = completedTutorial ? 'もう一度 ↗' : '開始する ↗';
   }
   setTutorialHeader();
@@ -371,6 +400,7 @@
   function goHome() {
     transition(() => {
       content.replaceChildren();
+      activePuzzle = null;
       sceneView.hidden = true;
       homeView.hidden = false;
       setTutorialHeader();
@@ -388,6 +418,7 @@
   }
   function showTutorial() {
     tutorialIndex = 0;
+    tutorialErrors = 0;
     showScene('TUTORIAL / 10 QUESTIONS', renderTutorial);
   }
   function renderTutorial() {
@@ -396,19 +427,24 @@
     const q = QUESTIONS[tutorialIndex];
     const bars = QUESTIONS.map((_, i) => `<span class="${i < tutorialIndex ? 'done' : ''}"></span>`).join('');
     content.innerHTML = `
-      <div class="scene-topline">PREPARATION / BASIC OPERATIONS</div>
+      <div class="scene-topline">PREPARATION / FIND THE NUMBER</div>
       <h1 class="scene-title">チュートリアル</h1>
       <div class="tutorial-box appear">
         <div class="tutorial-progress" aria-label="${tutorialIndex}問完了">${bars}</div>
-        <div class="question-number">QUESTION ${String(tutorialIndex + 1).padStart(2, '0')} / 10</div>
-        <p class="question">${escapeHtml(q.text)}</p>
-        <div class="answers">
-          <button class="answer" type="button" data-answer="true" aria-label="正しい">○</button>
-          <button class="answer" type="button" data-answer="false" aria-label="誤り">×</button>
-        </div>
-        <div class="answer-message" id="answerFeedback" aria-live="polite"></div>
+        <div class="question-number">RECORD ${String(tutorialIndex + 1).padStart(2, '0')} / 10 — ${escapeHtml(q.title)}</div>
+        <div class="question-clue" aria-label="手がかり">${escapeHtml(q.clue)}</div>
+        <p class="question-description">${escapeHtml(q.prompt)}</p>
+        <form class="answer-form" id="tutorialAnswerForm" autocomplete="off">
+          <label class="sr-only" for="tutorialAnswer">答えとなる数字</label>
+          <input class="answer-number" id="tutorialAnswer" name="answer" inputmode="numeric" pattern="[0-9０-９]*" maxlength="6" spellcheck="false" placeholder="数値を入力" required aria-describedby="answerFeedback">
+          <button class="button button--gold" type="submit">確定 ↗</button>
+        </form>
+        <div class="answer-message" id="answerFeedback" role="status" aria-live="polite"></div>
+        <button type="button" class="hint-button" id="showTutorialHint" ${tutorialErrors >= 2 ? '' : 'hidden'}>ヒントを見る</button>
+        <div class="hint-content" id="tutorialHint" hidden>${escapeHtml(q.hint)}</div>
       </div>
-      <p class="scene-footnote">正しい方を選択してください。完了すると次の設問へ進みます。</p>`;
+      <p class="scene-footnote">10の小さな謎を解くと、最初の区画を開くコードが得られます。</p>`;
+    if (tutorialErrors < 2) document.getElementById('tutorialAnswer')?.focus({preventScroll:true});
   }
   function renderTutorialResult() {
     completedTutorial = true;
@@ -422,6 +458,58 @@
         <p class="muted">以下のコードを区画1に入力してください。</p>
         <div class="code-reveal" aria-label="区画1の初期コード">${tutorialFirstCode}</div>
         <button type="button" class="button button--gold" id="tutorialToHome">INDEX に戻る ↗</button>
+      </div>`;
+  }
+  function showPuzzle(stage) {
+    activePuzzle = stage;
+    puzzleErrors = 0;
+    document.title = stage.title + ' | 三つの区画';
+    showScene(stage.path, () => {
+      const lineNodes = stage.lines.map((line,i) => `<p class="typed-line" data-line="${i}"></p>`).join('');
+      content.innerHTML = `
+        <div class="scene-topline">${escapeHtml(stage.path)}</div>
+        <h1 class="scene-title">${escapeHtml(stage.title)}</h1>
+        <div class="scene-text">${lineNodes}</div>
+        <div class="quick-actions"><button class="button button--text" id="skipWriting" type="button">全文を表示</button></div>
+        <div id="puzzleReveal" hidden>
+          <div class="puzzle-figure">${escapeHtml(stage.figure)}</div>
+          <p class="puzzle-prompt">${escapeHtml(stage.prompt)}</p>
+          <form class="answer-form" id="puzzleAnswerForm" autocomplete="off">
+            <label class="sr-only" for="puzzleAnswer">謎の答えとなる数値</label>
+            <input class="answer-number" id="puzzleAnswer" name="answer" inputmode="numeric" pattern="[0-9０-９]*" maxlength="8" placeholder="数値を入力" required aria-describedby="puzzleFeedback">
+            <button type="submit" class="button button--gold">解答 ↗</button>
+          </form>
+          <div class="answer-message" id="puzzleFeedback" role="status" aria-live="polite"></div>
+          <div id="puzzleSolved" hidden></div>
+        </div>`;
+      const token = ++typingToken;
+      document.addEventListener('sceneRevealed', () => typeLines(stage.lines, token), { once:true });
+    });
+  }
+  function normalizeNumber(text) {
+    const str = text.trim().replace(/[０-９]/g, c => String(c.charCodeAt(0) - 0xFF10));
+    return /^\d+$/.test(str) ? Number(str) : NaN;
+  }
+  function validatePuzzle(input) {
+    const el = document.getElementById('puzzleFeedback');
+    const n = normalizeNumber(input);
+    if (n !== activePuzzle.answer) {
+      puzzleErrors++;
+      el.textContent = puzzleErrors > 1 ? '一致しない。図と条件をもう一度確認せよ。' : 'その値では開かない。';
+      return;
+    }
+    const win = activePuzzle.result;
+    el.textContent = '';
+    document.getElementById('puzzleAnswerForm').hidden = true;
+    const box = document.getElementById('puzzleSolved');
+    box.hidden = false;
+    box.innerHTML = `
+      <div class="puzzle-output appear">
+        <div class="scene-topline">RECORD UNSEALED</div>
+        <p>${escapeHtml(win.text)}</p>
+        <p class="small">区画 ${win.zone} に入力するコード</p>
+        <div class="code-reveal">${escapeHtml(win.code)}</div>
+        <button type="button" class="button button--text" id="puzzleToHome">INDEX に戻る ↗</button>
       </div>`;
   }
   function showText(stage) {
@@ -462,6 +550,8 @@
     if (note) note.hidden = !note.textContent;
     const skip = document.getElementById('skipWriting');
     if (skip) skip.hidden = true;
+    const puzzle = document.getElementById('puzzleReveal');
+    if (puzzle) { puzzle.hidden = false; document.getElementById('puzzleAnswer')?.focus({preventScroll:true}); }
   }
   function showDevice(stage) {
     document.title = stage.title + ' | 三つの区画';
@@ -509,6 +599,7 @@
     document.getElementById('message' + zone).textContent = '';
     document.getElementById('code' + zone).value = '';
     if (stage.type === 'device') showDevice(stage);
+    else if (stage.type === 'puzzle') showPuzzle(stage);
     else showText(stage);
   }
   document.querySelectorAll('.code-form[data-zone]').forEach(form => {
@@ -540,18 +631,34 @@
   });
   tutorialButton.addEventListener('click', showTutorial);
   document.getElementById('backButton').addEventListener('click', goHome);
-  content.addEventListener('click', e => {
-    const ans = e.target.closest('button[data-answer]');
-    if (ans) {
-      if ((ans.dataset.answer === 'true') === QUESTIONS[tutorialIndex].answer) {
+  content.addEventListener('submit', e => {
+    if (e.target.id === 'tutorialAnswerForm') {
+      e.preventDefault();
+      const q = QUESTIONS[tutorialIndex];
+      if (!q) return;
+      const entered = normalizeNumber(e.target.elements.answer.value);
+      if (entered === q.answer) {
         tutorialIndex++;
+        tutorialErrors = 0;
         renderTutorial();
       } else {
+        tutorialErrors++;
         const feedback = document.getElementById('answerFeedback');
-        if (feedback) feedback.textContent = '一致しません。もう一度選択してください。';
+        if (feedback) feedback.textContent = 'その数ではない。もう一度考えてみよう。';
+        if (tutorialErrors >= 2) document.getElementById('showTutorialHint').hidden = false;
+        document.getElementById('tutorialAnswer')?.select();
       }
+    } else if (e.target.id === 'puzzleAnswerForm') {
+      e.preventDefault();
+      if (activePuzzle) validatePuzzle(e.target.elements.answer.value);
+    }
+  });
+  content.addEventListener('click', e => {
+    if (e.target.closest('#showTutorialHint')) {
+      document.getElementById('tutorialHint').hidden = false;
       return;
     }
+    if (e.target.closest('#puzzleToHome')) { goHome(); return; }
     if (e.target.closest('#tutorialToHome')) { goHome(); return; }
     if (e.target.closest('#skipWriting')) { skipWriting = true; return; }
     const dial = e.target.closest('button[data-dial]');
