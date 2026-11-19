@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0c11">
+  <title>三つの区画 | 謎解きゲーム試作</title>
+  <style>
+    :root {
+      --bg: #080a0e;
+      --surface: #11151b;
+      --surface2: #171c24;
+      --stroke: #424852;
+      --strokeDim: #2e343d;
+      --ink: #f1efe9;
+      --muted: #a3a6ad;
+      --quiet: #707781;
+      --gold: #bba887;
+      --goldBright: #e5cf9d;
+      --red: #cd7e75;
+      --fontBody: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", Georgia, serif;
+      --fontMono: "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse 85% 58% at 52% 9%, #1c222a 0%, #0c0e14 57%, #080a0e 100%);
+      color: var(--ink);
+      font-family: var(--fontBody);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: ""; pointer-events: none; position: fixed; inset: 0; z-index: 0;
+      opacity: .35;
+      background-image: linear-gradient(to right, transparent 0, transparent calc(100% - 1px), #5f636a11 calc(100% - 1px)),
+                        linear-gradient(to bottom, transparent 0, transparent calc(100% - 1px), #5f636a11 calc(100% - 1px));
+      background-size: 64px 64px;
+      mask-image: linear-gradient(#0008, transparent 86%);
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--goldBright); outline-offset: 3px; }
+    .site { position: relative; z-index: 1; max-width: 1120px; margin: auto; padding: 26px clamp(18px, 4.2vw, 52px) 36px; }
+    [hidden] { display: none !important; }
+    .masthead { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 15px; border-bottom: 1px solid #5d65713a; }
+    .mark { display: inline-flex; gap: 11px; align-items: center; color: #d1c8b7; text-decoration: none; letter-spacing: .23em; font-family: var(--fontMono); font-size: 11px; }
+    .mark::before { content: "✣"; border: 1px solid #8c8474; width: 28px; height: 28px; display: grid; place-items: center; font-size: 13px; }
+    .version { font-family: var(--fontMono); font-size: 10px; letter-spacing: .12em; color: var(--quiet); text-align: right; }
+    .hero { padding: 34px 0 25px; text-align: center; }
+    .eyebrow { font-family: var(--fontMono); letter-spacing: .34em; font-size: 10px; color: var(--gold); }
+    .hero h1 { font-weight: 400; letter-spacing: .34em; margin: 8px 0 7px; font-size: clamp(24px, 4vw, 37px); }
+    .hero p { color: #abaeb6; font-size: 12px; letter-spacing: .1em; margin: 0; }
+    .tutorial {
+      display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 17px 21px;
+      background: linear-gradient(110deg, #192027 0%, #10141a 60%, #161920 100%);
+      border: 1px solid #8e857340; margin-bottom: 20px;
+    }
+    .tutorial-info { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .tutorial-seal { border: 1px solid #8d8474; color: var(--goldBright); font-size: 22px; width: 52px; height: 52px; flex: 0 0 52px; display: grid; place-items: center; }
+    .tutorial-title { font-size: 17px; letter-spacing: .12em; }
+    .small { font-size: 11px; color: var(--muted); }
+    .mono { font-family: var(--fontMono); }
+    .muted { color: var(--muted); }
+    .button { padding: 11px 20px; color: var(--ink); background: #222831; border: 1px solid #797d83; letter-spacing: .15em; transition: background .2s, border-color .2s, transform .2s; white-space: nowrap; }
+    .button:hover { background: #343b46; border-color: #c3b18f; }
+    .button:active { transform: translateY(1px); }
+    .button--gold { background: #75674d; border-color: #c0ad86; }
+    .button--gold:hover { background: #897a5e; }
+    .button--text { background: transparent; border-color: #65696c66; }
+    .gates-frame { border: 1px solid #69707d8c; padding: clamp(12px, 2.8vw, 28px); position: relative; }
+    .gates-frame::before, .gates-frame::after { content:""; position:absolute; width:12px; height:12px; pointer-events:none; border-color:#c6b69c; }
+    .gates-frame::before { top:-1px; left:-1px; border-top:1px solid; border-left:1px solid; }
+    .gates-frame::after { right:-1px; bottom:-1px; border-right:1px solid; border-bottom:1px solid; }
+    .gates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(8px, 1.7vw, 20px); }
+    .gate { background: linear-gradient(155deg, #1b2028 0%, #10141a 80%); border: 1px solid #59616c; min-width: 0; min-height: clamp(230px, 28vw, 320px); display: flex; flex-direction: column; align-items: stretch; position: relative; padding: clamp(10px, 2vw, 23px); box-shadow: inset 0 0 0 5px #080b1033; }
+    .gate::before { content: ""; position:absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-top: 1px solid #858076; border-right: 1px solid #858076; }
+    .gate-header { display: flex; justify-content: space-between; gap: 4px; align-items: flex-start; }
+    .gate-kicker { font-family: var(--fontMono); letter-spacing: .18em; font-size: 10px; color: #8e979f; }
+    .gate-detail { font-family: var(--fontMono); font-size: 9px; color: #626a73; }
+    .gate-number { font-family: Georgia, var(--fontBody); font-size: clamp(42px, 7vw, 81px); line-height: 1; font-weight: normal; text-align: center; margin: auto 0; color: #e3e0d8; text-shadow: 0 5px 35px #ffffff21; }
+    .gate-rule { border: 0; border-top: 1px solid #a0a2a459; margin: 10px 0 15px; }
+    .code-form { width: 100%; }
+    .code-form label { display: block; margin-bottom: 6px; font-family: var(--fontMono); letter-spacing: .15em; font-size: 9px; color: #9ea7ae; }
+    .code-entry { display: flex; min-width: 0; border: 1px solid #737b86; background: #080b10; }
+    .code-entry:focus-within { border-color: var(--goldBright); }
+    .code-entry input { width: 100%; min-width: 0; border: 0; outline: 0; padding: 11px 10px; background: none; color: #f3eee2; font: 12px var(--fontMono); letter-spacing: .05em; }
+    .code-entry input:focus-visible { outline: 0; }
+    .code-entry input::placeholder { color: #636a74; }
+    .code-entry button { width: 44px; flex: 0 0 44px; background: #282f39; color: #e4dac5; border: 0; border-left: 1px solid #545c65; font-size: 19px; transition: background .2s; }
+    .code-entry button:hover { background: #48505b; }
+    .form-message { font: 11px var(--fontMono); min-height: 16px; color: var(--red); margin-top: 7px; }
+    .final-panel { margin-top: 27px; padding-top: 24px; border-top: 1px solid #7e818754; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .final-title { letter-spacing: .26em; font-size: 13px; font-weight: normal; margin: 0; color: #d7c7a7; }
+    .final-symbol { font-family: var(--fontMono); font-size: 10px; color: #8c806a; letter-spacing: .12em; }
+    .final-form { width: min(100%, 490px); }
+    .final-form .code-entry { border-color: #9d8d70; box-shadow: 0 0 30px #b3974710; }
+    .final-form .code-entry input { text-align: center; letter-spacing: .17em; font-size: 13px; }
+    .final-form .code-entry button { background: #514934; border-color: #79684a; }
+    .final-form .form-message { text-align: center; }
+    .footer { display: flex; justify-content: space-between; align-items: center; padding-top: 22px; gap: 12px; color: #747984; font: 10px var(--fontMono); letter-spacing: .13em; }
+    .scene-view { min-height: min(72vh, 800px); }
+    .scene-nav { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 20px; gap: 10px; border-bottom: 1px solid #777c853c; }
+    .back { color: #d7d5d1; background: transparent; border: 1px solid #73798666; padding: 9px 16px; font-family: var(--fontMono); letter-spacing: .1em; font-size: 11px; }
+    .back:hover { background: #29313a; }
+    .scene-route { color: #989b9f; font: 10px var(--fontMono); letter-spacing: .21em; }
+    .scene-content { margin: clamp(30px, 5.5vw, 70px) auto 40px; max-width: 840px; min-height: 360px; }
+    .scene-topline { color: var(--gold); font: 11px var(--fontMono); letter-spacing: .19em; }
+    .scene-title { font-weight: 400; font-size: clamp(25px, 4vw, 41px); letter-spacing: .12em; margin: 15px 0 38px; }
+    .scene-text { max-width: 700px; padding-left: clamp(0px, 2vw, 24px); border-left: 1px solid #6b64576b; }
+    .typed-line { font-size: clamp(14px, 2vw, 18px); letter-spacing: .055em; min-height: 1.6em; margin: 0 0 21px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .typed-line.important { color: var(--goldBright); font-family: var(--fontMono); font-size: clamp(15px, 2.4vw, 22px); letter-spacing: .16em; }
+    .scene-footnote { margin: 36px 0 12px; font: 11px var(--fontMono); color: #828b94; letter-spacing: .05em; }
+    .skip-line { margin-top: 5px; }
+    .quick-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+    .tutorial-box { background: #141920b8; border: 1px solid #6974826b; padding: clamp(18px,4vw,38px); }
+    .tutorial-progress { display: flex; gap: 7px; margin-bottom: 40px; }
+    .tutorial-progress span { height: 3px; flex: 1; background: #3b424b; }
+    .tutorial-progress span.done { background: var(--goldBright); }
+    .question-number { font: 11px var(--fontMono); color: var(--goldBright); letter-spacing: .17em; margin-bottom: 14px; }
+    .question { font-size: clamp(19px,3.1vw,29px); line-height: 1.7; min-height: 110px; letter-spacing: .06em; margin: 0 0 23px; }
+    .answers { display: flex; gap: 13px; }
+    .answer { min-width: 100px; font-size: 29px; color: #e8e9e8; padding: 14px 32px; border: 1px solid #79818b; background: #1a2029; }
+    .answer:hover { background: #343e4a; border-color: #d6c39b; }
+    .answer-message { min-height: 24px; font-size: 12px; color: #ca948e; margin-top: 16px; }
+    .appear { animation: appearUp .3s ease-out both; }
+    @keyframes appearUp { from { opacity: .15; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+    .result-panel { border: 1px solid #8d846f; padding: 38px clamp(18px, 5vw, 48px); background: radial-gradient(ellipse at 50% 0%, #2b2921, #151a20 70%); text-align: center; }
+    .result-panel h2 { font-size: 22px; font-weight: 400; letter-spacing: .18em; }
+    .code-reveal { font-family: var(--fontMono); font-size: clamp(36px, 8vw, 74px); color: #f0dcad; margin: 22px 0; letter-spacing: .2em; }
+    .apparatus-scene { text-align: center; }
+    .apparatus-note { max-width: 600px; margin: 0 auto 24px; color: #a8abb2; font-size: 13px; }
+    .device-stage { padding: 25px 12px 45px; perspective: 1000px; }
+    .apparatus {
+      position: relative; width: min(100%, 530px); margin: auto; border: 9px solid #594b3b; border-radius: 16px;
+      background: repeating-linear-gradient(5deg, #4a3726 0 4px, #513e2c 5px 8px, #453323 9px 13px);
+      box-shadow: 0 16px 0 #30271c, 0 21px 0 #1c1813, 0 27px 36px #000b, inset 0 0 0 2px #a68a5c;
+      transform: rotateX(9deg); padding: clamp(20px, 5vw, 42px) clamp(12px, 4vw, 35px) 40px;
+      animation: materialize 1.4s cubic-bezier(.12,.66,.23,1) both;
+    }
+    @keyframes materialize { from { opacity:0; transform:translateY(25px) rotateX(15deg) scale(.94); filter:blur(9px) brightness(.2); } to { opacity:1; transform:rotateX(9deg) scale(1); filter:blur(0) brightness(1); } }
+    .apparatus::before,.apparatus::after { content:""; position:absolute; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 28% 25%, #f5e2b6, #a78b5d 55%, #46331e); box-shadow:0 0 1px #000; top:12px; }
+    .apparatus::before { left: 12px; } .apparatus::after { right:12px; }
+    .metal-plate { background: linear-gradient(140deg, #50483e 0%, #9c876b 12%, #3a3027 56%, #8b785e 96%); padding: 5px; border: 1px solid #29231c; border-radius: 5px; }
+    .metal-inner { background: linear-gradient(175deg, #292a2a, #111a1c); border: 1px solid #a08b684d; padding: 25px 12px; }
+    .device-engrave { font: 11px var(--fontMono); letter-spacing: .36em; color: #c1b392; margin: 0 0 23px; }
+    .dials { display: flex; justify-content: center; gap: clamp(7px,2vw,19px); }
+    .dial { width: clamp(70px, 17vw, 108px); height: clamp(89px, 21vw, 124px); border: 5px solid #736248; border-radius: 12px; background: linear-gradient(145deg, #101415, #303235 50%, #101214); box-shadow: inset 0 3px 12px #000, 0 2px 4px #08070780; color: #e6d4ad; font: clamp(35px, 8vw, 62px) Georgia, serif; }
+    .dial:hover { border-color: #cbb083; }
+    .dial-labels { display:flex; justify-content:center; gap:clamp(7px,2vw,19px); margin-top: 10px; }
+    .dial-labels span { width: clamp(70px,17vw,108px); color: #a39b8f; font: 9px var(--fontMono); letter-spacing:.16em; }
+    .device-status { color: #b7aea0; min-height: 23px; font: 12px var(--fontMono); margin: 19px 0 0; }
+    .device-action { margin-top: 20px; }
+    .device-hint { font-size: 11px; color: #878b8e; margin: 22px auto 0; }
+    .glass { display:block; max-width: 600px; margin: 20px auto; padding: 24px; border: 1px solid #9c8a65; background: #1e251e; color: #e5dabb; }
+    .blackout { position: fixed; inset: 0; z-index: 50; background: #000; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .78s ease, visibility 0s linear .78s; }
+    .blackout.is-active { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .78s ease, visibility 0s; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (max-width: 700px) {
+      .site { padding: 17px 14px 35px; }
+      .hero { padding: 27px 0 21px; }
+      .tutorial { padding: 13px; }
+      .tutorial-seal { width: 39px; height: 39px; flex-basis:39px; font-size: 18px; }
+      .tutorial-title { font-size: 14px; }
+      .tutorial .button { padding: 9px 10px; font-size: 12px; }
+      .gate { min-height: 220px; padding: 10px 7px; }
+      .gate-kicker { font-size: 8px; letter-spacing: .06em; }
+      .gate-detail { display:none; }
+      .gate::before { top:5px; right:5px; }
+      .gate-number { font-size: clamp(37px,11vw,59px); }
+      .gate-rule { margin: 8px 0 12px; }
+      .code-form label { font-size: 8px; letter-spacing: 0; }
+      .code-entry input { padding: 9px 4px; font-size: 11px; }
+      .code-entry button { flex-basis:28px; width:28px; font-size: 15px; }
+      .form-message { font-size:9px; }
+      .final-panel { margin-top: 15px; padding-top: 20px; }
+      .scene-nav { padding: 18px 0 12px; }
+      .scene-route { font-size: 8px; }
+      .question { min-height: 130px; }
+      .answers .answer { flex:1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="site">
+  <header class="masthead">
+    <div class="mark">UNNAMED / THREE</div>
+    <span class="version">PROTOTYPE 0.1<br>LOCAL BUILD</span>
+  </header>
+
+  <main id="homeView">
+    <div class="hero">
+      <div class="eyebrow">THE INDEX</div>
+      <h1>解答入力</h1>
+      <p>記録を呼び出すには、対応するコードを入力してください。</p>
+    </div>
+
+    <section class="tutorial" aria-label="チュートリアル">
+      <div class="tutorial-info">
+        <div class="tutorial-seal" aria-hidden="true">十</div>
+        <div>
+          <div class="tutorial-title">チュートリアル</div>
+          <div class="small" id="tutorialStatus">全10問 ・ 未完了</div>
+        </div>
+      </div>
+      <button type="button" class="button" id="startTutorial">開始する ↗</button>
+    </section>
+
+    <section class="gates-frame" aria-label="3つの区画と最終コード">
+      <div class="gates">
+        <section class="gate">
+          <div class="gate-header"><span class="gate-kicker">SECTION / 01</span><span class="gate-detail">PORT A</span></div>
+          <div class="gate-number">1</div>
+          <hr class="gate-rule">
+          <form class="code-form" data-zone="1">
+            <label for="code1">ACCESS CODE</label>
+            <div class="code-entry"><input id="code1" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="入力" aria-label="区画1のコード"><button aria-label="区画1を開く" type="submit">↗</button></div>
+            <div class="form-message" id="message1" role="status"></div>
+          </form>
+        </section>
+        <section class="gate">
+          <div class="gate-header"><span class="gate-kicker">SECTION / 02</span><span class="gate-detail">PORT B</span></div>
+          <div class="gate-number">2</div>
+          <hr class="gate-rule">
+          <form class="code-form" data-zone="2">
+            <label for="code2">ACCESS CODE</label>
+            <div class="code-entry"><input id="code2" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="入力" aria-label="区画2のコード"><button aria-label="区画2を開く" type="submit">↗</button></div>
+            <div class="form-message" id="message2" role="status"></div>
+          </form>
+        </section>
+        <section class="gate">
+          <div class="gate-header"><span class="gate-kicker">SECTION / 03</span><span class="gate-detail">PORT C</span></div>
+          <div class="gate-number">3</div>
+          <hr class="gate-rule">
+          <form class="code-form" data-zone="3">
+            <label for="code3">ACCESS CODE</label>
+            <div class="code-entry"><input id="code3" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="入力" aria-label="区画3のコード"><button aria-label="区画3を開く" type="submit">↗</button></div>
+            <div class="form-message" id="message3" role="status"></div>
+          </form>
+        </section>
+      </div>
+      <div class="final-panel">
+        <h2 class="final-title">FINAL CODE</h2>
+        <div class="final-symbol">— UNRESOLVED —</div>
+        <form class="code-form final-form" id="finalForm">
+          <label class="sr-only" for="finalCode">最終解答を入力</label>
+          <div class="code-entry"><input id="finalCode" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="最終解答を入力"><button type="submit" aria-label="最終解答を確定">↗</button></div>
+          <div class="form-message" role="status" id="messageFinal"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <section id="sceneView" class="scene-view" hidden aria-live="off">
+    <div class="scene-nav">
+      <button type="button" class="back" id="backButton">← INDEX に戻る</button>
+      <div class="scene-route" id="sceneRoute">ENTRY / 001</div>
+    </div>
+    <div class="scene-content" id="sceneContent"></div>
+  </section>
+  <footer class="footer"><span>© 鈾 / ORIGINAL PUZZLE PROJECT</span><span>STATUS: IN DEVELOPMENT</span></footer>
+</div>
+<div class="blackout" id="blackout" aria-hidden="true"></div>
+<script>
+(() => {
+  'use strict';
+  const QUESTIONS = [
+    { text: '3² = 9', answer: true },
+    { text: '(−2) × (−3) = −6', answer: false },
+    { text: 'x + 5 = 8 の解は x = 3 である。', answer: true },
+    { text: '√49 = 7', answer: true },
+    { text: '三角形の内角の和は360°である。', answer: false },
+    { text: '0は素数である。', answer: false },
+    { text: 'y = 2x + 1 に x = 3 を代入すると y = 7 となる。', answer: true },
+    { text: '1/2 + 1/3 = 2/5', answer: false },
+    { text: 'a² − b² = (a − b)(a + b)', answer: true },
+    { text: '公平な6面サイコロで、偶数の出る確率は1/3である。', answer: false }
+  ];
+  // チュートリアルの正誤列にも、後の拡張に使える数学的な構造がある。
+  // ゲーム内では答え合わせ後、最初の入場コードだけを提示する。
+  const tutorialBits = QUESTIONS.map(q => q.answer ? '1' : '0').join('');
+  const tutorialFirstCode = String(parseInt(tutorialBits, 2));
+  const STAGES = {
+    '1': {
+      [tutorialFirstCode]: {
+        type: 'text', title: '第一の記録', path: 'SECTION 01 / RECORD A',
+        lines: [
+          '記録が一件、見つかった。',
+          'これは問題ではない。次の記録への索引である。',
+          'いずれの場所も、同じ入口に戻る。',
+          '区画2の呼出コード：',
+          { text: 'CYCLE', important: true }
+        ],
+        note: '※ここから先の謎本文は仮置きです。仕組みの動作確認に使えます。'
+      },
+      'ECHO': {
+        type: 'text', title: '回帰', path: 'SECTION 01 / RECORD B',
+        lines: [
+          '一度開いたものが、再び閉じている。',
+          '同じ入口に戻ったつもりだった。',
+          'しかし、何かが以前と異なっている。',
+          '次の本編の謎は、この記録から分岐させる。'
+        ],
+        note: '※この先は制作時に数学的な本編の謎へ差し替えます。'
+      }
+    },
+    '2': {
+      'CYCLE': {
+        type: 'text', title: '第二の記録', path: 'SECTION 02 / RECORD A',
+        lines: [
+          '輪は三つ。針はそれぞれ独立している。',
+          '左から順に、二、零、一。',
+          '次の場所は区画3。',
+          '区画3の呼出コード：',
+          { text: 'OPEN', important: true }
+        ],
+        note: '※箱ギミックを確認するための仮の記録です。後で難しい謎に置き換えられます。'
+      }
+    },
+    '3': {
+      'OPEN': { type: 'device', title: '封印された箱', path: 'SECTION 03 / APPARATUS' }
+    }
+  };
+  const homeView = document.getElementById('homeView');
+  const sceneView = document.getElementById('sceneView');
+  const content = document.getElementById('sceneContent');
+  const blackout = document.getElementById('blackout');
+  const route = document.getElementById('sceneRoute');
+  const tutorialStatus = document.getElementById('tutorialStatus');
+  const tutorialButton = document.getElementById('startTutorial');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let tutorialIndex = 0;
+  let navigating = false;
+  let typingToken = 0;
+  let skipWriting = false;
+  let dials = [0, 0, 0];
+  let completedTutorial = false;
+  let boxSolved = false;
+  try {
+    completedTutorial = localStorage.getItem('three_gates_tutorial_done') === 'yes';
+    boxSolved = localStorage.getItem('three_gates_box_done') === 'yes';
+  } catch (_) { /* ローカルファイル閲覧時のストレージ制限にも対応 */ }
+  function persist(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
+  function setTutorialHeader() {
+    tutorialStatus.textContent = completedTutorial ? '全10問 ・ 完了済み / 再挑戦可能' : '全10問 ・ 未完了';
+    tutorialButton.textContent = completedTutorial ? 'もう一度 ↗' : '開始する ↗';
+  }
+  setTutorialHeader();
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  function escapeHtml(s) { return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+  async function transition(render) {
+    if (navigating) return;
+    navigating = true;
+    typingToken++;
+    blackout.classList.add('is-active');
+    await delay(reduceMotion ? 30 : 850);
+    render();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    await delay(reduceMotion ? 20 : 120);
+    blackout.classList.remove('is-active');
+    await delay(reduceMotion ? 30 : 800);
+    navigating = false;
+    document.dispatchEvent(new CustomEvent('sceneRevealed'));
+  }
+  function goHome() {
+    transition(() => {
+      content.replaceChildren();
+      sceneView.hidden = true;
+      homeView.hidden = false;
+      setTutorialHeader();
+      document.title = '三つの区画 | 謎解きゲーム試作';
+    });
+  }
+  function showScene(path, renderer) {
+    transition(() => {
+      homeView.hidden = true;
+      sceneView.hidden = false;
+      content.replaceChildren();
+      route.textContent = path;
+      renderer();
+    });
+  }
+  function showTutorial() {
+    tutorialIndex = 0;
+    showScene('TUTORIAL / 10 QUESTIONS', renderTutorial);
+  }
+  function renderTutorial() {
+    route.textContent = 'TUTORIAL / ' + String(Math.min(tutorialIndex + 1, 10)).padStart(2, '0');
+    if (tutorialIndex >= QUESTIONS.length) { renderTutorialResult(); return; }
+    const q = QUESTIONS[tutorialIndex];
+    const bars = QUESTIONS.map((_, i) => `<span class="${i < tutorialIndex ? 'done' : ''}"></span>`).join('');
+    content.innerHTML = `
+      <div class="scene-topline">PREPARATION / BASIC OPERATIONS</div>
+      <h1 class="scene-title">チュートリアル</h1>
+      <div class="tutorial-box appear">
+        <div class="tutorial-progress" aria-label="${tutorialIndex}問完了">${bars}</div>
+        <div class="question-number">QUESTION ${String(tutorialIndex + 1).padStart(2, '0')} / 10</div>
+        <p class="question">${escapeHtml(q.text)}</p>
+        <div class="answers">
+          <button class="answer" type="button" data-answer="true" aria-label="正しい">○</button>
+          <button class="answer" type="button" data-answer="false" aria-label="誤り">×</button>
+        </div>
+        <div class="answer-message" id="answerFeedback" aria-live="polite"></div>
+      </div>
+      <p class="scene-footnote">正しい方を選択してください。完了すると次の設問へ進みます。</p>`;
+  }
+  function renderTutorialResult() {
+    completedTutorial = true;
+    persist('three_gates_tutorial_done', 'yes');
+    setTutorialHeader();
+    route.textContent = 'TUTORIAL / COMPLETE';
+    content.innerHTML = `
+      <div class="result-panel appear">
+        <div class="scene-topline">TUTORIAL / COMPLETE</div>
+        <h2>全10問を完了しました。</h2>
+        <p class="muted">以下のコードを区画1に入力してください。</p>
+        <div class="code-reveal" aria-label="区画1の初期コード">${tutorialFirstCode}</div>
+        <button type="button" class="button button--gold" id="tutorialToHome">INDEX に戻る ↗</button>
+      </div>`;
+  }
+  function showText(stage) {
+    document.title = stage.title + ' | 三つの区画';
+    showScene(stage.path, () => {
+      const lineNodes = stage.lines.map((line, i) => `<p class="typed-line ${typeof line === 'object' && line.important ? 'important' : ''}" data-line="${i}"></p>`).join('');
+      content.innerHTML = `
+        <div class="scene-topline">${escapeHtml(stage.path)}</div>
+        <h1 class="scene-title">${escapeHtml(stage.title)}</h1>
+        <div class="scene-text" id="typeLines">${lineNodes}</div>
+        <div class="quick-actions"><button class="button button--text skip-line" id="skipWriting" type="button">全文を表示</button></div>
+        <p class="scene-footnote" id="textNote" hidden>${escapeHtml(stage.note || '')}</p>`;
+      const token = ++typingToken;
+      document.addEventListener('sceneRevealed', () => typeLines(stage.lines, token), { once: true });
+    });
+  }
+  async function typeLines(lines, token) {
+    const nodes = [...content.querySelectorAll('.typed-line')];
+    skipWriting = false;
+    for (let i=0; i<lines.length; i++) {
+      if (token !== typingToken) return;
+      const str = typeof lines[i] === 'string' ? lines[i] : lines[i].text;
+      const chars = Array.from(str);
+      if (reduceMotion || skipWriting) {
+        nodes[i].textContent = str;
+      } else {
+        for (const ch of chars) {
+          if (token !== typingToken) return;
+          if (skipWriting) { nodes[i].textContent = str; break; }
+          nodes[i].textContent += ch;
+          await delay(25);
+        }
+      }
+      if (!reduceMotion && !skipWriting) await delay(230);
+    }
+    if (token !== typingToken) return;
+    const note = document.getElementById('textNote');
+    if (note) note.hidden = !note.textContent;
+    const skip = document.getElementById('skipWriting');
+    if (skip) skip.hidden = true;
+  }
+  function showDevice(stage) {
+    document.title = stage.title + ' | 三つの区画';
+    dials = [0, 0, 0];
+    showScene(stage.path, () => {
+      content.innerHTML = `
+      <div class="apparatus-scene">
+        <div class="scene-topline">${escapeHtml(stage.path)}</div>
+        <h1 class="scene-title">${escapeHtml(stage.title)}</h1>
+        <p class="apparatus-note">三つの輪が動く。押すたびに目盛りが一つ進む。</p>
+        <div class="device-stage">
+          <div class="apparatus" aria-label="三連ダイヤルの仕掛け箱">
+            <div class="metal-plate"><div class="metal-inner">
+              <p class="device-engrave">NO. 003 / SEALED</p>
+              <div class="dials" id="dials">
+                <button class="dial" data-dial="0" aria-label="左のダイヤルを進める">0</button>
+                <button class="dial" data-dial="1" aria-label="中央のダイヤルを進める">0</button>
+                <button class="dial" data-dial="2" aria-label="右のダイヤルを進める">0</button>
+              </div>
+              <div class="dial-labels"><span>LEFT</span><span>CENTER</span><span>RIGHT</span></div>
+              <p class="device-status" id="deviceStatus" role="status">LOCKED</p>
+            </div></div>
+            <button class="button button--gold device-action" type="button" id="unlockBox">解錠を試みる</button>
+          </div>
+        </div>
+        <div id="deviceSuccess"></div>
+        <p class="device-hint">※本編用の独自の箱ギミックに差し替えるための試作です。<br>手がかりは区画2の記録にあります。</p>
+      </div>`;
+      if (boxSolved) showDeviceSuccess();
+    });
+  }
+  function showDeviceSuccess() {
+    document.getElementById('deviceStatus').textContent = 'UNSEALED';
+    document.getElementById('deviceSuccess').innerHTML = `
+      <div class="glass appear"><div class="scene-topline">ACCESS GRANTED</div>
+      <p>箱の底に記されていた識別子</p>
+      <div class="code-reveal" style="font-size:clamp(28px,6vw,55px)">ECHO</div>
+      <p class="small">区画1に入力できる。</p></div>`;
+  }
+  function openStage(zone, value) {
+    const key = value.trim().toUpperCase().replace(/\s+/g, '');
+    if (!key) { document.getElementById('message' + zone).textContent = 'コードを入力してください。'; return; }
+    const stage = STAGES[zone]?.[key];
+    if (!stage) { document.getElementById('message' + zone).textContent = '対応する記録が見つかりません。'; return; }
+    document.getElementById('message' + zone).textContent = '';
+    document.getElementById('code' + zone).value = '';
+    if (stage.type === 'device') showDevice(stage);
+    else showText(stage);
+  }
+  document.querySelectorAll('.code-form[data-zone]').forEach(form => {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const zone = form.dataset.zone;
+      openStage(zone, form.elements.code.value);
+    });
+  });
+  document.getElementById('finalForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const key = document.getElementById('finalCode').value.trim().toUpperCase();
+    if (!key) { document.getElementById('messageFinal').textContent = '解答を入力してください。'; return; }
+    if (key !== 'DEMO') {
+      document.getElementById('messageFinal').textContent = 'まだ、その答えは受理されません。';
+      return;
+    }
+    document.getElementById('messageFinal').textContent = '';
+    document.getElementById('finalCode').value = '';
+    showText({
+      title:'正解', path:'FINAL / DEMONSTRATION',
+      lines: [
+        'その解答は、正しい。',
+        'しかし。',
+        {text:'真の正解ではない。', important:true}
+      ],
+      note: '※最終演出の動作確認用です。実際の最終解答はまだ設定していません。'
+    });
+  });
+  tutorialButton.addEventListener('click', showTutorial);
+  document.getElementById('backButton').addEventListener('click', goHome);
+  content.addEventListener('click', e => {
+    const ans = e.target.closest('button[data-answer]');
+    if (ans) {
+      if ((ans.dataset.answer === 'true') === QUESTIONS[tutorialIndex].answer) {
+        tutorialIndex++;
+        renderTutorial();
+      } else {
+        const feedback = document.getElementById('answerFeedback');
+        if (feedback) feedback.textContent = '一致しません。もう一度選択してください。';
+      }
+      return;
+    }
+    if (e.target.closest('#tutorialToHome')) { goHome(); return; }
+    if (e.target.closest('#skipWriting')) { skipWriting = true; return; }
+    const dial = e.target.closest('button[data-dial]');
+    if (dial) {
+      const index = Number(dial.dataset.dial);
+      dials[index] = (dials[index] + 1) % 10;
+      dial.textContent = String(dials[index]);
+      const status = document.getElementById('deviceStatus');
+      if (status) status.textContent = 'READY';
+      return;
+    }
+    if (e.target.closest('#unlockBox')) {
+      const status = document.getElementById('deviceStatus');
+      if (dials.join('') === '201') {
+        boxSolved = true;
+        persist('three_gates_box_done', 'yes');
+        showDeviceSuccess();
+      } else if (status) status.textContent = 'DENIED / 目盛りが一致しない';
+    }
+  });
+})();
+</script>
+</body>
+</html>
