@@ -996,7 +996,18 @@
       ], '試作版の裏ルートはここまで。今後、新たな謎と真の結末を追加する。');
       return;
     }
-    if ((key === 'CLEAR' && completedNormal) || (key === 'AWAKE' && completedNormal) || key === 'AWARE') {
+    if (key === 'CLEAR' && completedNormal && !reverseAttempted) {
+      status.textContent = '';
+      input.value = '';
+      finalScene('正解', 'FINAL / FIRST ANSWER', [
+        'その解答は、確かに正しい。',
+        '三つの区画は、一度ここで閉じる。',
+        {text:'しかし、真の正解ではない。',important:true},
+        '同じ記録を、別の側から読む方法がある。'
+      ], 'INDEX から、今までに見た数字をもう一度たどれる。');
+      return;
+    }
+    if ((key === 'CLEAR' && completedNormal && reverseAttempted) || (key === 'AWAKE' && completedNormal) || key === 'AWARE') {
       status.textContent = '';
       input.value = '';
       finalScene('照合結果', 'FINAL / VERIFICATION', [
