@@ -216,7 +216,7 @@
 <div class="site">
   <header class="masthead">
     <div class="mark">UNNAMED / THREE</div>
-    <span class="version">PROTOTYPE 0.4<br>WEB BUILD</span>
+    <span class="version">PROTOTYPE 0.5<br>WEB BUILD</span>
   </header>
 
   <main id="homeView">
@@ -452,19 +452,32 @@
       "result": {
         "zone": 3,
         "code": "MIRROR",
-        "text": "反転した信号が届いた。もう一つの記録が開いた。"
-      }
+        "text": "反転した信号が届いた。もう一つの記録が開いた。",
+        "mark": "sixBit"
+      },
+      "alternatives": [
+        {
+          "answer": "100110",
+          "result": {
+            "zone": 3,
+            "code": "GLASS",
+            "text": "受信値のままでも別の装置が応答した。"
+          }
+        }
+      ]
     },
     "HUSH": {
       "type": "text",
-      "title": "止まった記録",
-      "path": "SECTION 02 / SILENCE",
+      "title": "閉じた記録",
+      "path": "SECTION 02 / LAST RECORD",
       "lines": [
-        "道順は正しかった。",
-        "しかし、道を通ることだけが唯一の答えとは限らない。",
-        "同じものを、裏側から見た者の記録が残っている。"
+        "C　　異なる記録をまとめた。",
+        "L　　残された経路を見直した。",
+        "E　　すべての装置に触れた。",
+        "A　　最後の入力欄は、まだ空いている。",
+        "R　　答えは五行の頭にある。"
       ],
-      "note": "ほかにも開ける記録がある。"
+      "note": "五つの行の先頭を順に読め。最後の入力欄は、最初から画面の下にあった。"
     }
   },
   "3": {
@@ -500,24 +513,57 @@
       ],
       "figure": "01  02  03  04  05\n06  07  08  09  10\n\n奇数＝1  /  偶数＝0\n       1 ⇄ 0",
       "prompt": "チュートリアル10問の数値解答を解いた順に並べ、奇数を1、偶数を0とする。10桁を反転して二進数として読んだ十進数はいくつ？",
-      "answer": 462,
+      "answer": null,
       "result": {
         "zone": 1,
-        "code": "462",
-        "text": "区画1のもう一つの入口が見つかった。"
-      }
+        "code": "__COMPLEMENT__",
+        "text": "十の記録を反転した結果が、新しい区画1の入口を示した。",
+        "mark": "tutorial"
+      },
+      "alternatives": [
+        {
+          "answer": "__ORIGINAL__",
+          "result": {
+            "zone": 1,
+            "code": "__ORIGINAL__",
+            "text": "十の記録から、区画1に戻るための番号が得られた。"
+          }
+        }
+      ]
     },
     "ORIGIN": {
-      "type": "text",
-      "title": "未完の終端",
-      "path": "SECTION 03 / REMAINDER",
+      "type": "puzzle",
+      "title": "最後の照合",
+      "path": "SECTION 03 / VERIFICATION",
       "lines": [
-        "初めて触れた十の問題は、最初から記録の一部だった。",
-        "一つの正解が、すべての解答を意味するわけではない。",
-        "十の記録の中に、五桁で表せる数がある。",
-      "はじめの区画には、まだ見つかっていない記録が残されている。"
+        "最初の数も、途中の信号も、最後の記録も二つの面を持っていた。",
+        "二行の同じ位置は、一つだけ異なるように並んでいる。"
       ],
-      "note": "この続きは制作中。"
+      "figure": "表　1 0 1 1 0\n裏　0 1 0 ? 1",
+      "prompt": "上段と下段の同じ位置に同じ数字は入らない。? の値を入力せよ。",
+      "answer": 0,
+      "result": {
+        "finalCode": "AWAKE",
+        "text": "最後の識別子が現れた。ホームの最下段に入力せよ。",
+        "mark": "conclusion"
+      }
+    },
+    "GLASS": {
+      "type": "puzzle",
+      "title": "格子の残像",
+      "path": "SECTION 03 / GLASS",
+      "lines": [
+        "透けた板の両面に、三本の数列が刻まれていた。",
+        "同じ幅の空白に、同じ規則が流れている。"
+      ],
+      "figure": " 1    2    4\n 2    4    8\n 4    8    ?",
+      "prompt": "縦にも横にも倍になる表。? に入る数値は？",
+      "answer": 16,
+      "result": {
+        "zone": 3,
+        "code": "MIRROR",
+        "text": "鏡の反対側に続く記録が見えた。"
+      }
     }
   }
 };
@@ -556,22 +602,86 @@
     "text": "最初にあった場所へつながる最後の記録が見つかった。"
   }
 };
-  // 第6式の解16は5ビットで10000。0/1反転後の01111=15を別コードとして扱う。
-  // x²=16の解を15とみなすわけではない。
+  // 16=10000 (5-bit) -> 01111=15。各段階の解答履歴は最後にだけ照合する。
   const fiveBitOriginal = QUESTIONS[5].answer;
   const fiveBitComplement = fiveBitOriginal ^ 0b11111;
   STAGES['1'][String(fiveBitComplement)] = {
-  "type": "text",
-  "title": "五桁の余白",
-  "path": "SECTION 01 / UNLISTED RECORD",
+  "type": "puzzle",
+  "title": "五つの灯",
+  "path": "SECTION 01 / FIVE LAMPS",
   "lines": [
-    "数字は変わった。式そのものが変わったわけではない。",
-    "同じ五桁で書けば、16は10000。",
-    "それを裏返した数は、最初の解ではない。",
-    "ここにはまだ、誰も解いていない記録がある。"
+    "先ほどの十進数の値ではなく、灯の点灯を記した紙が見つかった。",
+    "それぞれの灯は0か1で表され、表裏で点灯と消灯が入れ替わる。"
   ],
-  "note": "未公開の分岐。ここから先は制作中。"
+  "figure": "表　10000   →   裏　01111\n表　01010   →   裏　?????",
+  "prompt": "二行目の裏側を五桁の二進数として作り、十進数に直した値を入力せよ。",
+  "answer": 21,
+  "result": {
+    "zone": 1,
+    "code": "21",
+    "text": "五つの灯が次の区画1の記録を指した。",
+    "mark": "fiveBit"
+  },
+  "alternatives": [
+    {
+      "answer": 10,
+      "result": {
+        "zone": 1,
+        "code": "10",
+        "text": "同じ五つの灯から、別の記録が見つかった。"
+      }
+    }
+  ]
 };
+  STAGES['1']['10'] = {
+  "type": "puzzle",
+  "title": "残った方眼",
+  "path": "SECTION 01 / GRID TRACE",
+  "lines": [
+    "光が消えたあと、数が書かれた三角形の方眼が残った。",
+    "横の二つの数を足したものが、一段下の数になる。"
+  ],
+  "figure": "       3        5\n          8\n    8           13\n          ?",
+  "prompt": "下段の二つを同じ規則で結ぶと、? はいくつ？",
+  "answer": 21,
+  "result": {
+    "zone": 1,
+    "code": "21",
+    "text": "方眼の奥から別の区画1の番号が見つかった。"
+  }
+};
+  STAGES['1']['21'] = {
+  "type": "puzzle",
+  "title": "二枚の通信記録",
+  "path": "SECTION 01 / THE SECOND SIGNAL",
+  "lines": [
+    "一枚は観測した信号。もう一枚は、観測の裏側を記した信号。",
+    "0を短音、1を長音に置き換えると、どちらも単語として読める。"
+  ],
+  "figure": "観測　1  /  00  /  11  /  0\n反射　0  /  11  /  00  /  1\n\n0＝・   1＝―",
+  "prompt": "反射側の信号をモールス符号として読んだ英単語4文字を入力せよ。",
+  "answer": "EMIT",
+  "result": {
+    "zone": 2,
+    "code": "EMIT",
+    "text": "裏側の信号を扱う装置が応答した。",
+    "mark": "morse"
+  },
+  "alternatives": [
+    {
+      "answer": "TIME",
+      "result": {
+        "zone": 2,
+        "code": "TIME",
+        "text": "別の読み取り装置が応答した。"
+      }
+    }
+  ]
+};
+  STAGES['3']['MIRROR'].answer = Number(tutorialComplementCode);
+  STAGES['3']['MIRROR'].result.code = tutorialComplementCode;
+  STAGES['3']['MIRROR'].alternatives[0].answer = tutorialFirstCode;
+  STAGES['3']['MIRROR'].alternatives[0].result.code = tutorialFirstCode;
   const homeView = document.getElementById('homeView');
   const sceneView = document.getElementById('sceneView');
   const content = document.getElementById('sceneContent');
@@ -590,11 +700,25 @@
   let tutorialErrors = 0;
   let puzzleErrors = 0;
   let activePuzzle = null;
+  let normalGoalReached = false;
+  let completedNormal = false;
+  let reverseAttempted = false;
+  let reversedMarks = new Set();
   try {
     completedTutorial = localStorage.getItem('three_gates_tutorial_done') === 'yes';
     boxSolved = localStorage.getItem('three_gates_box_done') === 'yes';
+    normalGoalReached = localStorage.getItem('three_gates_normal_goal') === 'yes';
+    completedNormal = localStorage.getItem('three_gates_normal_cleared') === 'yes';
+    reverseAttempted = localStorage.getItem('three_gates_reverse_started') === 'yes';
+    const saved = JSON.parse(localStorage.getItem('three_gates_reverse_steps') || '[]');
+    if (Array.isArray(saved)) reversedMarks = new Set(saved.filter(v => typeof v === 'string'));
   } catch (_) { /* ローカルファイル閲覧時のストレージ制限にも対応 */ }
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
+  function recordReverseStep(mark) {
+    if (!mark) return;
+    reversedMarks.add(mark);
+    persist('three_gates_reverse_steps', JSON.stringify([...reversedMarks]));
+  }
   function setTutorialHeader() {
     tutorialStatus.textContent = completedTutorial ? '全10問 ・ 完了済み / 再挑戦可能' : '全10問 ・ 数字で答える';
     tutorialButton.textContent = completedTutorial ? 'もう一度 ↗' : '開始する ↗';
@@ -720,6 +844,7 @@
       return;
     }
     const win = alternate ? alternate.result : activePuzzle.result;
+    recordReverseStep(win.mark);
     el.textContent = '';
     document.getElementById('puzzleAnswerForm').hidden = true;
     const box = document.getElementById('puzzleSolved');
@@ -728,8 +853,8 @@
       <div class="puzzle-output appear">
         <div class="scene-topline">RECORD UNSEALED</div>
         <p>${escapeHtml(win.text)}</p>
-        <p class="small">区画 ${win.zone} に入力するコード</p>
-        <div class="code-reveal">${escapeHtml(win.code)}</div>
+        <p class="small">${win.finalCode ? '最下段の最終解答欄へ' : '区画 ' + win.zone + ' に入力するコード'}</p>
+        <div class="code-reveal">${escapeHtml(win.finalCode || win.code)}</div>
         <button type="button" class="button button--text" id="puzzleToHome">INDEX に戻る ↗</button>
       </div>`;
   }
@@ -817,6 +942,14 @@
     if (!key) { document.getElementById('message' + zone).textContent = 'コードを入力してください。'; return; }
     const stage = STAGES[zone]?.[key];
     if (!stage) { document.getElementById('message' + zone).textContent = '対応する記録が見つかりません。'; return; }
+    if (zone === '1' && key === String(fiveBitComplement)) {
+      reverseAttempted = true;
+      persist('three_gates_reverse_started', 'yes');
+    }
+    if (zone === '2' && key === 'HUSH') {
+      normalGoalReached = true;
+      persist('three_gates_normal_goal', 'yes');
+    }
     document.getElementById('message' + zone).textContent = '';
     document.getElementById('code' + zone).value = '';
     if (stage.type === 'device') showDevice(stage);
@@ -830,25 +963,51 @@
       openStage(zone, form.elements.code.value);
     });
   });
+  const reverseRequiredSteps = ['fiveBit', 'morse', 'sixBit', 'tutorial', 'conclusion'];
+  function finalScene(title, path, lines, note) {
+    showText({title, path, lines, note});
+  }
   document.getElementById('finalForm').addEventListener('submit', e => {
     e.preventDefault();
-    const key = document.getElementById('finalCode').value.trim().toUpperCase();
-    if (!key) { document.getElementById('messageFinal').textContent = '解答を入力してください。'; return; }
-    if (key !== 'DEMO') {
-      document.getElementById('messageFinal').textContent = 'まだ、その答えは受理されません。';
+    const input = document.getElementById('finalCode');
+    const key = input.value.trim().normalize('NFKC').toUpperCase().replace(/\s+/g, '');
+    const status = document.getElementById('messageFinal');
+    if (!key) { status.textContent = '解答を入力してください。'; return; }
+    if (key === 'CLEAR' && normalGoalReached && !completedNormal) {
+      completedNormal = true;
+      persist('three_gates_normal_cleared', 'yes');
+      status.textContent = '';
+      input.value = '';
+      finalScene('正解', 'FINAL / FIRST ANSWER', [
+        'その解答は、確かに正しい。',
+        '三つの区画は、一度ここで閉じる。',
+        {text:'しかし、真の正解ではない。',important:true},
+        '同じ記録を、別の側から読む方法がある。'
+      ], 'INDEX から、今までに見た数字をもう一度たどれる。');
       return;
     }
-    document.getElementById('messageFinal').textContent = '';
-    document.getElementById('finalCode').value = '';
-    showText({
-      title:'正解', path:'FINAL / DEMONSTRATION',
-      lines: [
-        'その解答は、正しい。',
-        'しかし。',
-        {text:'真の正解ではない。', important:true}
-      ],
-      note: '※最終演出の動作確認用です。実際の最終解答はまだ設定していません。'
-    });
+    if (key === 'AWAKE' && completedNormal && reverseRequiredSteps.every(step => reversedMarks.has(step))) {
+      status.textContent = '';
+      input.value = '';
+      finalScene('解答を受理した', 'FINAL / SECOND ANSWER', [
+        '最初の正解とは、異なる経路が記録されている。',
+        '表と裏の操作がすべてつながった。',
+        {text:'第二の解答を確認した。',important:true}
+      ], '試作版の裏ルートはここまで。今後、新たな謎と真の結末を追加する。');
+      return;
+    }
+    if ((key === 'CLEAR' && completedNormal) || (key === 'AWAKE' && completedNormal) || key === 'AWARE') {
+      status.textContent = '';
+      input.value = '';
+      finalScene('照合結果', 'FINAL / VERIFICATION', [
+        '提出された解答を確認した。',
+        '答えの形は、成立している。',
+        'だが、ここへ至る記録のつながりが一致しない。',
+        {text:'どこかに、裏返されなかったものが残っている。',important:true}
+      ], 'どの段階かは示されない。すべてを最初から解き直す必要はない。');
+      return;
+    }
+    status.textContent = 'その解答を受け付ける記録は、まだ見つかっていない。';
   });
   tutorialButton.addEventListener('click', showTutorial);
   document.getElementById('backButton').addEventListener('click', goHome);
