@@ -211,12 +211,13 @@
       *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
   </style>
+<link rel="stylesheet" href="./mini-games.css?v=06">
 </head>
 <body>
 <div class="site">
   <header class="masthead">
     <div class="mark">UNNAMED / THREE</div>
-    <span class="version">PROTOTYPE 0.5<br>WEB BUILD</span>
+    <span class="version">PROTOTYPE 0.6<br>WEB BUILD</span>
   </header>
 
   <main id="homeView">
@@ -292,6 +293,7 @@
   <footer class="footer"><span>© 鈾 / ORIGINAL PUZZLE PROJECT</span><span>STATUS: IN DEVELOPMENT</span></footer>
 </div>
 <div class="blackout" id="blackout" aria-hidden="true"></div>
+<script src="./mini-games.js?v=06"></script>
 <script>
 (() => {
   'use strict';
@@ -482,87 +484,59 @@
   },
   "3": {
     "OPEN": {
-      "type": "device",
-      "title": "封印された箱",
-      "path": "SECTION 03 / APPARATUS"
+      "type": "minigame",
+      "game": "slider",
+      "title": "数字の箱 ― 五の出口",
+      "path": "SECTION 03 / NUMBERED BOX",
+      "result": {
+        "zone": 1,
+        "code": "ECHO",
+        "text": "大きな5が出口に届き、箱の奥から別の記録が現れた。"
+      }
     },
     "PATH": {
-      "type": "puzzle",
-      "title": "一本道の数字",
-      "path": "SECTION 03 / HIDDEN ROUTE",
-      "lines": [
-        "白い道は途中で分かれているが、一方は行き止まりだ。",
-        "壁を通り抜けず、SからGへたどり着け。"
-      ],
-      "figure": "S   2   ■   ■   ■\n■   3   ■   9   ■\n■   4   5   6   ■\n■   ■   ■   7   G",
-      "prompt": "SからGへの道で、通った数字だけを足せ。行き止まりには戻らない。",
-      "answer": 27,
+      "type": "minigame",
+      "game": "maze",
+      "title": "白い通路",
+      "path": "SECTION 03 / LABYRINTH",
       "result": {
         "zone": 2,
         "code": "HUSH",
-        "text": "行き止まりの向こうに、別の記録の呼出コードがあった。"
+        "text": "通路を抜けると、封印された文書のコードが見つかった。"
       }
     },
     "MIRROR": {
-      "type": "puzzle",
-      "title": "十枚の裏面",
-      "path": "SECTION 03 / REVERSE INDEX",
-      "lines": [
-        "ここには十枚の札がある。",
-        "一度終えた十の問題も、記録からは消えていない。"
-      ],
-      "figure": "01  02  03  04  05\n06  07  08  09  10\n\n奇数＝1  /  偶数＝0\n       1 ⇄ 0",
-      "prompt": "チュートリアル10問の数値解答を解いた順に並べ、奇数を1、偶数を0とする。10桁を反転して二進数として読んだ十進数はいくつ？",
-      "answer": null,
+      "type": "minigame",
+      "game": "mirror",
+      "title": "六つの反射",
+      "path": "SECTION 03 / INVERTED SWITCH",
       "result": {
         "zone": 1,
-        "code": "__COMPLEMENT__",
-        "text": "十の記録を反転した結果が、新しい区画1の入口を示した。",
+        "code": "__DYNAMIC__",
+        "text": "六つのスイッチの表裏が一致し、区画1の別の入口が示された。",
         "mark": "tutorial"
-      },
-      "alternatives": [
-        {
-          "answer": "__ORIGINAL__",
-          "result": {
-            "zone": 1,
-            "code": "__ORIGINAL__",
-            "text": "十の記録から、区画1に戻るための番号が得られた。"
-          }
-        }
-      ]
+      }
     },
     "ORIGIN": {
-      "type": "puzzle",
-      "title": "最後の照合",
-      "path": "SECTION 03 / VERIFICATION",
-      "lines": [
-        "最初の数も、途中の信号も、最後の記録も二つの面を持っていた。",
-        "二行の同じ位置は、一つだけ異なるように並んでいる。"
-      ],
-      "figure": "表　1 0 1 1 0\n裏　0 1 0 ? 1",
-      "prompt": "上段と下段の同じ位置に同じ数字は入らない。? の値を入力せよ。",
-      "answer": 0,
+      "type": "minigame",
+      "game": "memory",
+      "title": "四枚の記憶",
+      "path": "SECTION 03 / SEQUENCE",
       "result": {
         "finalCode": "AWAKE",
-        "text": "最後の識別子が現れた。ホームの最下段に入力せよ。",
+        "text": "四枚の板が順番に開き、最後の解答が現れた。",
         "mark": "conclusion"
       }
     },
     "GLASS": {
-      "type": "puzzle",
-      "title": "格子の残像",
-      "path": "SECTION 03 / GLASS",
-      "lines": [
-        "透けた板の両面に、三本の数列が刻まれていた。",
-        "同じ幅の空白に、同じ規則が流れている。"
-      ],
-      "figure": " 1    2    4\n 2    4    8\n 4    8    ?",
-      "prompt": "縦にも横にも倍になる表。? に入る数値は？",
-      "answer": 16,
+      "type": "minigame",
+      "game": "lights",
+      "title": "硝子の回路",
+      "path": "SECTION 03 / CIRCUIT",
       "result": {
         "zone": 3,
         "code": "MIRROR",
-        "text": "鏡の反対側に続く記録が見えた。"
+        "text": "すべての灯りが消え、鏡に刻まれたコードが現れた。"
       }
     }
   }
@@ -678,10 +652,7 @@
     }
   ]
 };
-  STAGES['3']['MIRROR'].answer = Number(tutorialComplementCode);
   STAGES['3']['MIRROR'].result.code = tutorialComplementCode;
-  STAGES['3']['MIRROR'].alternatives[0].answer = tutorialFirstCode;
-  STAGES['3']['MIRROR'].alternatives[0].result.code = tutorialFirstCode;
   const homeView = document.getElementById('homeView');
   const sceneView = document.getElementById('sceneView');
   const content = document.getElementById('sceneContent');
@@ -694,7 +665,7 @@
   let navigating = false;
   let typingToken = 0;
   let skipWriting = false;
-  let dials = [0, 0, 0];
+  let miniGameCleanup = null;
   let completedTutorial = false;
   let boxSolved = false;
   let tutorialErrors = 0;
@@ -732,6 +703,7 @@
     typingToken++;
     blackout.classList.add('is-active');
     await delay(reduceMotion ? 30 : 850);
+    if (miniGameCleanup) { miniGameCleanup(); miniGameCleanup = null; }
     render();
     window.scrollTo({ top: 0, behavior: 'instant' });
     await delay(reduceMotion ? 20 : 120);
@@ -899,43 +871,38 @@
     const puzzle = document.getElementById('puzzleReveal');
     if (puzzle) { puzzle.hidden = false; document.getElementById('puzzleAnswer')?.focus({preventScroll:true}); }
   }
-  function showDevice(stage) {
+  function showMiniGame(stage) {
     document.title = stage.title + ' | 三つの区画';
-    dials = [0, 0, 0];
     showScene(stage.path, () => {
-      content.innerHTML = `
-      <div class="apparatus-scene">
-        <div class="scene-topline">${escapeHtml(stage.path)}</div>
-        <h1 class="scene-title">${escapeHtml(stage.title)}</h1>
-        <p class="apparatus-note">三つの輪が動く。押すたびに目盛りが一つ進む。</p>
-        <div class="device-stage">
-          <div class="apparatus" aria-label="三連ダイヤルの仕掛け箱">
-            <div class="metal-plate"><div class="metal-inner">
-              <p class="device-engrave">NO. 003 / SEALED</p>
-              <div class="dials" id="dials">
-                <button class="dial" data-dial="0" aria-label="左のダイヤルを進める">0</button>
-                <button class="dial" data-dial="1" aria-label="中央のダイヤルを進める">0</button>
-                <button class="dial" data-dial="2" aria-label="右のダイヤルを進める">0</button>
-              </div>
-              <div class="dial-labels"><span>LEFT</span><span>CENTER</span><span>RIGHT</span></div>
-              <p class="device-status" id="deviceStatus" role="status">LOCKED</p>
-            </div></div>
-            <button class="button button--gold device-action" type="button" id="unlockBox">解錠を試みる</button>
-          </div>
-        </div>
-        <div id="deviceSuccess"></div>
-        <p class="device-hint">※本編用の独自の箱ギミックに差し替えるための試作です。<br>手がかりは区画2の記録にあります。</p>
-      </div>`;
-      if (boxSolved) showDeviceSuccess();
+      content.innerHTML =
+        '<div class="scene-topline">' + escapeHtml(stage.path) + '</div>' +
+        '<h1 class="scene-title">' + escapeHtml(stage.title) + '</h1>' +
+        '<div class="mg-host" id="miniGameHost"></div>' +
+        '<div id="miniGameReward" role="status" aria-live="polite"></div>' +
+        '<p class="scene-footnote">一つのコードにつき一つの操作型ステージ。クリアすると別の区画の記録が開く。</p>';
+      const mount = window.ThreeGatesMiniGames?.mount;
+      if (!mount) {
+        document.getElementById('miniGameHost').textContent = 'ミニゲームの読み込みに失敗しました。ページを再読み込みしてください。';
+        return;
+      }
+      miniGameCleanup = mount(document.getElementById('miniGameHost'), stage.game, () => {
+        const reward = stage.result;
+        recordReverseStep(reward.mark);
+        if (stage.game === 'slider') {
+          boxSolved = true;
+          persist('three_gates_box_done','yes');
+        }
+        document.getElementById('miniGameReward').innerHTML =
+          '<div class="mg-win appear">' +
+          '<p class="mg-win-label">STAGE CLEAR / 01 OF 01</p>' +
+          '<h3>仕掛けが解除された。</h3>' +
+          '<p>' + escapeHtml(reward.text) + '</p>' +
+          '<p class="small">' + (reward.finalCode ? '最下段の FINAL CODE に入力' : '区画 ' + reward.zone + ' に入力するコード') + '</p>' +
+          '<div class="mg-win-code">' + escapeHtml(reward.finalCode || reward.code) + '</div>' +
+          '<button type="button" class="button button--gold" id="miniGameToHome">INDEX に戻る ↗</button>' +
+          '</div>';
+      });
     });
-  }
-  function showDeviceSuccess() {
-    document.getElementById('deviceStatus').textContent = 'UNSEALED';
-    document.getElementById('deviceSuccess').innerHTML = `
-      <div class="glass appear"><div class="scene-topline">ACCESS GRANTED</div>
-      <p>箱の底に記されていた識別子</p>
-      <div class="code-reveal" style="font-size:clamp(28px,6vw,55px)">ECHO</div>
-      <p class="small">区画1に入力できる。</p></div>`;
   }
   function openStage(zone, value) {
     const key = value.trim().toUpperCase().replace(/\s+/g, '');
@@ -952,7 +919,7 @@
     }
     document.getElementById('message' + zone).textContent = '';
     document.getElementById('code' + zone).value = '';
-    if (stage.type === 'device') showDevice(stage);
+    if (stage.type === 'minigame') showMiniGame(stage);
     else if (stage.type === 'puzzle') showPuzzle(stage);
     else showText(stage);
   }
@@ -1049,26 +1016,11 @@
       document.getElementById('tutorialHint').hidden = false;
       return;
     }
+    if (e.target.closest('#miniGameToHome')) { goHome(); return; }
     if (e.target.closest('#puzzleToHome')) { goHome(); return; }
     if (e.target.closest('#tutorialToHome')) { goHome(); return; }
     if (e.target.closest('#skipWriting')) { skipWriting = true; return; }
-    const dial = e.target.closest('button[data-dial]');
-    if (dial) {
-      const index = Number(dial.dataset.dial);
-      dials[index] = (dials[index] + 1) % 10;
-      dial.textContent = String(dials[index]);
-      const status = document.getElementById('deviceStatus');
-      if (status) status.textContent = 'READY';
-      return;
-    }
-    if (e.target.closest('#unlockBox')) {
-      const status = document.getElementById('deviceStatus');
-      if (dials.join('') === '201') {
-        boxSolved = true;
-        persist('three_gates_box_done', 'yes');
-        showDeviceSuccess();
-      } else if (status) status.textContent = 'DENIED / 目盛りが一致しない';
-    }
+
   });
 })();
 </script>
