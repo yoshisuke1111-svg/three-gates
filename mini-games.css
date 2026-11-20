@@ -1,0 +1,50 @@
+/* 区画3: 1ステージずつの操作型ミニゲーム */
+.mg-host{border:1px solid #665e4b;padding:clamp(16px,3vw,32px);background:linear-gradient(155deg,#171d25,#0d1117);margin-bottom:22px}
+.mg-instruction{color:#ece3d3;font-size:clamp(14px,2vw,19px);line-height:1.9;margin:0 0 22px}
+.mg-layout{display:flex;align-items:flex-start;justify-content:center;gap:clamp(16px,3.5vw,35px);flex-wrap:wrap}
+.mg-board-area{width:min(100%,390px);flex:0 1 390px;min-width:0}
+.mg-board{width:100%;aspect-ratio:4/5;background-color:#28241e;background-image:linear-gradient(#c5a87723 1px,transparent 1px),linear-gradient(90deg,#c5a87723 1px,transparent 1px);background-size:25% 20%;border:6px ridge #aa845c;position:relative;box-shadow:inset 0 0 25px #0b0b0b,0 20px 45px #0008;touch-action:none;user-select:none}
+.mg-piece{position:absolute;border:4px solid #292823;box-shadow:inset 0 0 0 2px #dbc79a4f,0 2px 6px #0007;color:#f3e4c4;text-shadow:0 2px 6px #000c;border-radius:6px;font:bold clamp(24px,6vw,44px) Georgia,serif;cursor:grab;touch-action:none;background:linear-gradient(125deg,#756447,#a58b61 52%,#554a37);transition:left .16s,top .16s,border-color .16s}
+.mg-piece.is-selected{border-color:#f3d48f;z-index:2;box-shadow:0 0 0 2px #f1cb7c,inset 0 0 0 2px #fff3b467,0 0 20px #deb35a6b}
+.mg-piece-5{font-size:clamp(58px,11vw,96px);background:linear-gradient(140deg,#5e3c26,#bf8350 53%,#68452d);color:#fff0d5}
+.mg-piece-1{background:linear-gradient(130deg,#4b6568,#759191,#334d55)}
+.mg-piece-2{background:linear-gradient(135deg,#605b76,#827c9a,#4a4a65)}
+.mg-piece-3{background:linear-gradient(135deg,#7e6646,#a68c5c,#594c36)}
+.mg-piece span{display:grid;place-items:center;width:100%;height:100%}
+.mg-board.mg-cleared{border-color:#d9ba78;box-shadow:0 0 35px #c8a45f55}
+.mg-exit-mark{text-align:center;letter-spacing:.25em;color:#e2c180;font:11px monospace;padding:13px 0;border-bottom:1px solid #77654b}
+.mg-side{flex:1 1 190px;max-width:280px}
+.mg-caption{font:11px monospace;letter-spacing:.16em;color:#ad9978;margin:2px 0 10px}
+.mg-counter{font:25px Georgia,serif;letter-spacing:.07em;margin:0 0 12px;color:#f1e2bb}
+.mg-help{font-size:13px;color:#c1c3c7;line-height:1.85}
+.mg-pad{display:flex;flex-direction:column;align-items:center;gap:5px;margin:16px 0}
+.mg-pad>button,.mg-pad>div button{min-width:48px;min-height:44px;background:#283039;border:1px solid #7c8591;color:#eee4cd;font:22px sans-serif;touch-action:manipulation}
+.mg-pad>div{display:flex;gap:5px}
+.mg-pad button:active{background:#665c49}
+.mg-small-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.mg-small-actions button{padding:9px 12px;border:1px solid #6e7883;background:#222831;color:#e2e0db;font-size:12px}
+.mg-note{font-size:12px;color:#dfcfa9;min-height:25px;margin-top:19px}
+.mg-maze{flex:0 1 390px;width:min(100%,390px);aspect-ratio:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);gap:3px;background:#0b0c10;border:6px solid #6f6453;padding:4px;touch-action:none}
+.mg-maze-cell{background:#45565d;border:1px solid #72828a;color:#d6cfaa;font-size:clamp(20px,4vw,31px);border-radius:2px}
+.mg-maze-cell.is-wall{background:repeating-linear-gradient(45deg,#101821,#101821 6px,#1d2833 6px,#1d2833 10px);border-color:#171f28;cursor:default}
+.mg-maze-cell.is-goal{background:#6a5730;color:#ffdf83}
+.mg-maze-cell.is-player{background:#c5a16d;color:#1c1c19;box-shadow:inset 0 0 0 3px #fff0c48b}
+.mg-light-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:min(100%,350px);aspect-ratio:1;padding:13px;border:3px solid #626b70;background:#10151a}
+.mg-light{border-radius:50%;font-size:clamp(30px,6vw,56px);transition:background .15s,box-shadow .15s;background:#252b31;border:1px solid #58616b;color:#5b6269}
+.mg-light.on{background:#897650;color:#ffe4a5;box-shadow:0 0 20px #f7d08396,inset 0 0 0 4px #eacc886b}
+.mg-mirror-rows{max-width:530px;margin:0 auto;padding:15px;border:1px solid #59616b;background:#0f141b}
+.mg-mirror-name{font:12px monospace;letter-spacing:.14em;color:#b2a48b;margin:13px 0 8px}
+.mg-mirror-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.mg-bit{display:grid;place-items:center;min-height:clamp(48px,8vw,68px);border:1px solid #8d8d88;background:#303844;font:clamp(20px,4vw,31px) monospace;color:#f0e5c9}
+.mg-fixed .mg-bit{background:#1b2027;color:#a5b3c4}
+.mg-bit-switch{cursor:pointer;background:#62563f}
+.mg-bit-switch:active{background:#948164}
+.mg-center{text-align:center}
+.mg-memory-grid{display:grid;grid-template-columns:repeat(2,minmax(80px,150px));gap:12px;justify-content:center;margin:18px auto 30px}
+.mg-memory-tile{height:clamp(100px,18vw,150px);border:3px solid #706755;background:linear-gradient(145deg,#303d45,#171e27);color:#c1b8a3;font:clamp(27px,6vw,48px) Georgia,serif;transition:background .18s,box-shadow .18s}
+.mg-memory-tile.flash{background:#c3a269;color:#211c14;box-shadow:0 0 34px #dfb96fae}
+.mg-win{border:1px solid #bfa16d;background:linear-gradient(150deg,#24271e,#181e1e);padding:20px 24px;margin-top:24px}
+.mg-win .mg-win-label{font:12px monospace;letter-spacing:.2em;color:#d0b989}
+.mg-win h3{font-size:22px;font-weight:400;margin:12px 0}
+.mg-win-code{font:clamp(30px,7vw,52px) monospace;color:#f5e1b3;letter-spacing:.16em;text-align:center;margin:16px 0}
+@media(max-width:720px){.mg-host{padding:14px}.mg-layout{gap:14px}.mg-side{max-width:100%;flex-basis:100%}.mg-pad{margin:12px auto}.mg-board-area{flex-basis:330px}.mg-board{max-width:330px;margin:auto}.mg-maze{flex-basis:330px}.mg-small-actions{justify-content:center}}
