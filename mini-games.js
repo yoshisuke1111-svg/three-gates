@@ -43,11 +43,22 @@
       '<p class="mg-note" id="mg-slide-note" aria-live="polite">5を出口へ。数字ごとに駒の大きさが異なる。</p></div></div>';
     var board = root.querySelector("#mg-slide-board"), note=root.querySelector("#mg-slide-note");
     function draw() {
-      board.innerHTML = pieces.map(function (p) {
-        return '<button type="button" data-piece="' + p.id + '" class="mg-piece mg-piece-' + p.n +
-          (selected===p.id?' is-selected':'')+'" aria-label="駒'+p.n+'を選択" style="left:'+(p.x*25)+'%;top:'+(p.y*20)+'%;width:'+(p.w*25)+'%;height:'+(p.h*20)+'%">' +
-          '<span>'+p.n+'</span></button>';
-      }).join("");
+      pieces.forEach(function(p) {
+        var btn=board.querySelector('[data-piece="'+p.id+'"]');
+        if(!btn){
+          btn=document.createElement("button");
+          btn.type="button";
+          btn.dataset.piece=p.id;
+          btn.setAttribute("aria-label","駒"+p.n+"を選択");
+          btn.innerHTML="<span>"+p.n+"</span>";
+          board.appendChild(btn);
+        }
+        btn.className="mg-piece mg-piece-"+p.n+(selected===p.id?" is-selected":"");
+        btn.style.left=(p.x*25)+"%";
+        btn.style.top=(p.y*20)+"%";
+        btn.style.width=(p.w*25)+"%";
+        btn.style.height=(p.h*20)+"%";
+      });
       root.querySelector("#mg-slide-counter").textContent="MOVES "+String(moves).padStart(3,"0");
     }
     function reset() {
