@@ -216,7 +216,7 @@
 <div class="site">
   <header class="masthead">
     <div class="mark">UNNAMED / THREE</div>
-    <span class="version">PROTOTYPE 0.3<br>WEB BUILD</span>
+    <span class="version">PROTOTYPE 0.4<br>WEB BUILD</span>
   </header>
 
   <main id="homeView">
@@ -295,78 +295,78 @@
 <script>
 (() => {
   'use strict';
-  // チュートリアルは正誤選択でなく、数列・五十音・図形などを利用する10個の小謎。
+  // チュートリアルは中学～高1の基礎方程式10問。仕掛けや図形謎は本編へ。
   // 解答に共通する性質を後半の仕掛けに利用できるようにしている。
   const QUESTIONS = [
   {
-    "title": "足し算の矢印",
-    "clue": "3 ──→ 7 ──→ 11 ──→ ? ──→ 19",
-    "prompt": "同じ規則で進む。? に入る数は？",
-    "answer": 15,
-    "hint": "ひとつ先へ進むとき、何を足している？"
-  },
-  {
-    "title": "掛け算の矢印",
-    "clue": "2 ──→ 6 ──→ 18 ──→ ? ──→ 162",
-    "prompt": "同じ規則で進む。? に入る数は？",
-    "answer": 54,
-    "hint": "差ではなく、隣り合う数の比を見よう。"
-  },
-  {
-    "title": "ひらがなの棚",
-    "clue": "あ  い  う  え  お\nか  き  く  け  こ\nさ  し  す  せ  そ\n\nあ＝1　か＝6　さ＝11",
-    "prompt": "左上の「あ」を1として五十音順に数える。「か」と「せ」の番号を足すと？",
-    "answer": 20,
-    "hint": "「せ」は、さ行の4番目。"
-  },
-  {
-    "title": "段違いの表",
-    "clue": " 2     5     8\n11     ?    17\n20    23    26",
-    "prompt": "縦にも横にも同じ規則がある。? は？",
-    "answer": 14,
-    "hint": "右に進むと3増え、下に進むと9増える。"
-  },
-  {
-    "title": "二つの重さ",
-    "clue": "○ + ○ + △ ＝ 11\n○ + △      ＝  8\n\n○ ＝  ?",
-    "prompt": "同じ記号は同じ重さ。○ の重さはいくつ？",
-    "answer": 3,
-    "hint": "上の式から下の式を引いてみよう。"
-  },
-  {
-    "title": "針が指す場所",
-    "clue": "12 ──→ 3 ──→ 6 ──→ ? ──→ 12",
-    "prompt": "時計の文字盤を同じ角度ずつ進む。? に入る数字は？",
-    "answer": 9,
-    "hint": "毎回90度ずつ進む。"
-  },
-  {
-    "title": "格子の最短路",
-    "clue": "S ── □ ── □\n│    │    │\n□ ── □ ── □\n│    │    │\n□ ── □ ── G",
-    "prompt": "SからGまで、右または下へ1辺ずつ進む。必要な最小の移動回数は？",
+    "title": "第1式",
+    "clue": "x² = 16",
+    "prompt": "正の解 x を数字で入力せよ。",
     "answer": 4,
-    "hint": "右に2回、下に2回進めばよい。"
+    "hint": "同じ正の数を2回掛けて16になるのは？"
   },
   {
-    "title": "折りたたむ番号",
-    "clue": "       [2]\n[3]   [1]   [4]   [6]\n       [5]",
-    "prompt": "これは立方体の展開図。折りたたむと「1」の反対側は何番？",
+    "title": "第2式",
+    "clue": "2x + 1 = 15",
+    "prompt": "x を求めよ。",
+    "answer": 7,
+    "hint": "両辺から1を引いて、2で割る。"
+  },
+  {
+    "title": "第3式",
+    "clue": "x ÷ 3 = 4",
+    "prompt": "x を求めよ。",
+    "answer": 12,
+    "hint": "両辺を3倍する。"
+  },
+  {
+    "title": "第4式",
+    "clue": "x − 8 = −2",
+    "prompt": "x を求めよ。",
     "answer": 6,
-    "hint": "横一列に並んだ4枚は側面を一周する。"
+    "hint": "両辺に8を足す。"
   },
   {
-    "title": "鏡の数字",
-    "clue": "12  ─鏡→  21\n45  ─鏡→  54\n67  ─鏡→  ?",
-    "prompt": "数字の順番を反対に並べる。? は？",
-    "answer": 76,
-    "hint": "左の2桁を逆から読もう。"
+    "title": "第5式",
+    "clue": "3x = 27",
+    "prompt": "x を求めよ。",
+    "answer": 9,
+    "hint": "両辺を3で割る。"
   },
   {
-    "title": "増える段差",
-    "clue": "1 ──→ 3 ──→ 6 ──→ 10 ──→ ?",
-    "prompt": "矢印ごとに増える数も1ずつ増えている。? は？",
-    "answer": 15,
-    "hint": "増加量は2、3、4、その次は5。"
+    "title": "第6式",
+    "clue": "x + 4 = 20",
+    "prompt": "x を求めよ。",
+    "answer": 16,
+    "hint": "20から4を引く。"
+  },
+  {
+    "title": "第7式",
+    "clue": "5x − 6 = 9",
+    "prompt": "x を求めよ。",
+    "answer": 3,
+    "hint": "まず両辺に6を足す。"
+  },
+  {
+    "title": "第8式",
+    "clue": "(x + 2) ÷ 2 = 5",
+    "prompt": "x を求めよ。",
+    "answer": 8,
+    "hint": "最初に両辺を2倍する。"
+  },
+  {
+    "title": "第9式",
+    "clue": "2x = 10",
+    "prompt": "x を求めよ。",
+    "answer": 5,
+    "hint": "両辺を2で割る。"
+  },
+  {
+    "title": "第10式",
+    "clue": "x² − 10x = 0",
+    "prompt": "x > 0 とする。x を求めよ。",
+    "answer": 10,
+    "hint": "左辺を x でくくる。"
   }
 ];
   // ここで使う0/1は正誤ではない。各「数値解答」の偶奇に由来する。
@@ -514,7 +514,8 @@
       "lines": [
         "初めて触れた十の問題は、最初から記録の一部だった。",
         "一つの正解が、すべての解答を意味するわけではない。",
-        "記録はまだ完成していない。"
+        "十の記録の中に、五桁で表せる数がある。",
+      "はじめの区画には、まだ見つかっていない記録が残されている。"
       ],
       "note": "この続きは制作中。"
     }
@@ -554,6 +555,22 @@
     "code": "ORIGIN",
     "text": "最初にあった場所へつながる最後の記録が見つかった。"
   }
+};
+  // 第6式の解16は5ビットで10000。0/1反転後の01111=15を別コードとして扱う。
+  // x²=16の解を15とみなすわけではない。
+  const fiveBitOriginal = QUESTIONS[5].answer;
+  const fiveBitComplement = fiveBitOriginal ^ 0b11111;
+  STAGES['1'][String(fiveBitComplement)] = {
+  "type": "text",
+  "title": "五桁の余白",
+  "path": "SECTION 01 / UNLISTED RECORD",
+  "lines": [
+    "数字は変わった。式そのものが変わったわけではない。",
+    "同じ五桁で書けば、16は10000。",
+    "それを裏返した数は、最初の解ではない。",
+    "ここにはまだ、誰も解いていない記録がある。"
+  ],
+  "note": "未公開の分岐。ここから先は制作中。"
 };
   const homeView = document.getElementById('homeView');
   const sceneView = document.getElementById('sceneView');
@@ -629,7 +646,7 @@
     const q = QUESTIONS[tutorialIndex];
     const bars = QUESTIONS.map((_, i) => `<span class="${i < tutorialIndex ? 'done' : ''}"></span>`).join('');
     content.innerHTML = `
-      <div class="scene-topline">PREPARATION / FIND THE NUMBER</div>
+      <div class="scene-topline">PREPARATION / SOLVE THE EQUATION</div>
       <h1 class="scene-title">チュートリアル</h1>
       <div class="tutorial-box appear">
         <div class="tutorial-progress" aria-label="${tutorialIndex}問完了">${bars}</div>
@@ -645,7 +662,7 @@
         <button type="button" class="hint-button" id="showTutorialHint" ${tutorialErrors >= 2 ? '' : 'hidden'}>ヒントを見る</button>
         <div class="hint-content" id="tutorialHint" hidden>${escapeHtml(q.hint)}</div>
       </div>
-      <p class="scene-footnote">10の小さな謎を解くと、最初の区画を開くコードが得られます。</p>`;
+      <p class="scene-footnote">10の方程式を解くと、最初の区画を開くコードが得られます。</p>`;
     if (tutorialErrors < 2) document.getElementById('tutorialAnswer')?.focus({preventScroll:true});
   }
   function renderTutorialResult() {
