@@ -48,3 +48,25 @@
 .mg-win h3{font-size:22px;font-weight:400;margin:12px 0}
 .mg-win-code{font:clamp(30px,7vw,52px) monospace;color:#f5e1b3;letter-spacing:.16em;text-align:center;margin:16px 0}
 @media(max-width:720px){.mg-host{padding:14px}.mg-layout{gap:14px}.mg-side{max-width:100%;flex-basis:100%}.mg-pad{margin:12px auto}.mg-board-area{flex-basis:330px}.mg-board{max-width:330px;margin:auto}.mg-maze{flex-basis:330px}.mg-small-actions{justify-content:center}}
+
+/* Numbered-box progression: tap-to-slide feedback, no directional pad */
+.mg-slider-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.mg-slider-stage{font:12px var(--fontMono,monospace);color:#efd39b;letter-spacing:.22em;border:1px solid #8b7753;padding:7px 12px;background:#2d2c28}
+.mg-slider-types{font:13px var(--fontMono,monospace);letter-spacing:.1em;color:#b8c4c8}
+.mg-slider-level-title{font-size:clamp(19px,3vw,27px);font-weight:400;letter-spacing:.12em;margin:7px 0 15px}
+.mg-piece-movable{cursor:pointer}
+.mg-piece-movable:hover{filter:brightness(1.11)}
+.mg-piece-blocked{cursor:default}
+.mg-piece:active{filter:brightness(1.18)}
+.mg-piece:focus-visible{outline:3px solid #ffdf96;outline-offset:-4px;z-index:3}
+#mg-slide-next .mg-win{margin-top:17px}
+#mg-slide-next [data-act="next"]{font-size:13px;margin-top:8px;min-height:44px}
+@media(max-width:720px){
+  .mg-slider-head{gap:7px}
+  .mg-slider-stage{font-size:11px;padding:6px 10px}
+  .mg-slider-types{font-size:11px}
+  .mg-slider-level-title{margin:9px 0}
+  .mg-instruction{margin-bottom:15px}
+  .mg-board-area{flex:0 1 min(100%,350px)}
+  #mg-slide-next [data-act="next"]{width:100%}
+}
