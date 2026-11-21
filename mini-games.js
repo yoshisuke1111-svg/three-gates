@@ -20,102 +20,191 @@
     return map[e.key] || null;
   }
   var vector = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
+  // The 5 tile is a 2x2 piece. Other tiles use the digit as a shape label.
+  // Each level is an independently solvable 4x5 board; only the third gives a code.
   function slider(root, win) {
-    var start = [
-      {id:"5",x:1,y:2,w:2,h:2,n:"5"},
-      {id:"3a",x:2,y:0,w:1,h:2,n:"3"},
-      {id:"3b",x:1,y:0,w:1,h:2,n:"3"},
-      {id:"3c",x:0,y:0,w:1,h:2,n:"3"},
-      {id:"3d",x:0,y:2,w:1,h:2,n:"3"},
-      {id:"2",x:2,y:4,w:2,h:1,n:"2"},
-      {id:"1a",x:3,y:2,w:1,h:1,n:"1"},
-      {id:"1b",x:0,y:4,w:1,h:1,n:"1"},
-      {id:"1c",x:1,y:4,w:1,h:1,n:"1"},
-      {id:"1d",x:3,y:0,w:1,h:1,n:"1"}
+    var levels = [
+      {title:"最初の箱", label:"1 + 5", items:[
+        ["5",1,0,2,2],
+        ["1a",0,2,1,1],["1b",1,2,1,1],["1c",2,2,1,1],["1d",3,2,1,1],
+        ["1e",0,3,1,1],["1f",1,3,1,1],["1g",2,3,1,1],["1h",3,3,1,1]
+      ]},
+      {title:"横長の箱", label:"1 + 2 + 5", items:[
+        ["5",1,0,2,2],
+        ["2a",1,2,2,1],["2b",0,3,2,1],["2c",2,3,2,1],
+        ["1a",0,0,1,1],["1b",3,0,1,1],["1c",0,1,1,1],
+        ["1d",3,1,1,1],["1e",0,2,1,1],["1f",3,2,1,1]
+      ]},
+      {title:"四種類の箱", label:"1 + 2 + 3 + 5", items:[
+        ["5",1,2,2,2],
+        ["3a",2,0,1,2],["3b",1,0,1,2],["3c",0,0,1,2],["3d",0,2,1,2],
+        ["2a",2,4,2,1],
+        ["1a",3,2,1,1],["1b",0,4,1,1],["1c",1,4,1,1],["1d",3,0,1,1]
+      ]}
     ];
-    var pieces = start.map(function (p) {return Object.assign({},p);});
-    var history = [], moves = 0, selected = "5", won = false, touch = null;
-    root.innerHTML = '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口まで運べ。駒は上下左右にのみ滑る。</p>' +
-      '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="数字の箱を動かす盤面"></div><div class="mg-exit-mark">▼ EXIT / 5</div></div>' +
-      '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / 01</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>' +
-      '<p class="mg-help">駒をタップして選択し、矢印で移動。駒を直接スワイプしても動かせる。</p>' +
-      arrows() + '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">最初から</button></div>' +
-      '<p class="mg-note" id="mg-slide-note" aria-live="polite">5を出口へ。数字ごとに駒の大きさが異なる。</p></div></div>';
-    var board = root.querySelector("#mg-slide-board"), note=root.querySelector("#mg-slide-note");
+    var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
+    var stageComplete=false, finished=false, touch=null, suppressClick=false;
+    root.innerHTML=
+      '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
+      '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
+      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口へ。<b>動かしたい駒をタップ</b>すると空いた方向へ動く。</p>'+
+      '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="5を出口まで移動する数字の箱"></div>'+
+      '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
+      '<div class="mg-side"><p class="mg-caption">NUMBERED BOX</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
+      '<p class="mg-help">タップだけで移動。複数方向に動けるときは、<b>動かしたい側の端</b>をタップ。スワイプやドラッグでも移動できる。</p>'+
+      '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">このステージをやり直す</button></div>'+
+      '<p class="mg-note" id="mg-slide-note" aria-live="polite"></p></div></div>'+
+      '<div id="mg-slide-next" aria-live="polite"></div>';
+    var board=root.querySelector("#mg-slide-board");
+    var note=root.querySelector("#mg-slide-note");
+    var next=root.querySelector("#mg-slide-next");
+    function freshItems(index) {
+      return levels[index].items.map(function (p) {
+        return {id:p[0],n:p[0].charAt(0),x:p[1],y:p[2],w:p[3],h:p[4]};
+      });
+    }
+    function load(index) {
+      levelIndex=index;
+      pieces=freshItems(levelIndex);
+      history=[];moves=0;lastPiece="5";stageComplete=false;
+      touch=null;suppressClick=false;
+      board.classList.remove("mg-cleared");
+      board.replaceChildren();
+      next.replaceChildren();
+      root.querySelector("#mg-slide-stage").textContent="STAGE "+(levelIndex+1)+" / "+levels.length;
+      root.querySelector("#mg-slide-types").textContent=levels[levelIndex].label;
+      root.querySelector("#mg-slide-title").textContent=levels[levelIndex].title;
+      note.textContent="駒を直接タップして動かそう。";
+      draw();
+    }
+    function isLegal(piece,dir) {
+      if(!vector[dir])return false;
+      var nx=piece.x+vector[dir][0],ny=piece.y+vector[dir][1];
+      if(nx<0||ny<0||nx+piece.w>4||ny+piece.h>5)return false;
+      return pieces.every(function(q){
+        return q===piece || !(nx<q.x+q.w && nx+piece.w>q.x && ny<q.y+q.h && ny+piece.h>q.y);
+      });
+    }
+    function legalDirs(piece) {
+      return ["left","right","up","down"].filter(function(d){return isLegal(piece,d);});
+    }
     function draw() {
       pieces.forEach(function(p) {
         var btn=board.querySelector('[data-piece="'+p.id+'"]');
-        if(!btn){
+        if(!btn) {
           btn=document.createElement("button");
-          btn.type="button";
-          btn.dataset.piece=p.id;
-          btn.setAttribute("aria-label","駒"+p.n+"を選択");
+          btn.type="button";btn.dataset.piece=p.id;
           btn.innerHTML="<span>"+p.n+"</span>";
           board.appendChild(btn);
         }
-        btn.className="mg-piece mg-piece-"+p.n+(selected===p.id?" is-selected":"");
-        btn.style.left=(p.x*25)+"%";
-        btn.style.top=(p.y*20)+"%";
-        btn.style.width=(p.w*25)+"%";
-        btn.style.height=(p.h*20)+"%";
+        var movable=legalDirs(p).length>0;
+        btn.className="mg-piece mg-piece-"+p.n+(movable?" mg-piece-movable":" mg-piece-blocked");
+        btn.setAttribute("aria-label","駒"+p.n+(movable?"、タップして移動":"、現在動かせない"));
+        btn.style.left=(p.x*25)+"%";btn.style.top=(p.y*20)+"%";
+        btn.style.width=(p.w*25)+"%";btn.style.height=(p.h*20)+"%";
       });
       root.querySelector("#mg-slide-counter").textContent="MOVES "+String(moves).padStart(3,"0");
     }
-    function reset() {
-      pieces=start.map(function (p){return Object.assign({},p);});
-      history=[]; moves=0; selected="5"; won=false; note.textContent="盤面を戻した。";
-      draw();
+    function chooseDirection(piece,coords) {
+      var dirs=legalDirs(piece);
+      if(dirs.length===0)return null;
+      if(dirs.length===1)return dirs[0];
+      var el=board.querySelector('[data-piece="'+piece.id+'"]');
+      if(!el)return dirs[0];
+      var rect=el.getBoundingClientRect();
+      var x=.5,y=.5;
+      if(coords && Number.isFinite(coords.x) && Number.isFinite(coords.y)){
+        x=Math.min(1,Math.max(0,(coords.x-rect.left)/Math.max(1,rect.width)));
+        y=Math.min(1,Math.max(0,(coords.y-rect.top)/Math.max(1,rect.height)));
+      }
+      var dists={left:x,right:1-x,up:y,down:1-y};
+      dirs.sort(function(a,b){return dists[a]-dists[b];});
+      return dirs[0];
     }
-    function move(dir) {
-      if(won || !vector[dir])return;
-      var p=pieces.find(function(x){return x.id===selected;});
+    function step(id,dir) {
+      if(stageComplete||finished)return;
+      var p=pieces.find(function(o){return o.id===id;});
       if(!p)return;
-      var dx=vector[dir][0],dy=vector[dir][1],nx=p.x+dx,ny=p.y+dy;
-      if(nx<0||ny<0||nx+p.w>4||ny+p.h>5){note.textContent="その方向は壁じゃ。";return;}
-      for(var i=0;i<pieces.length;i++){
-        var q=pieces[i];if(q.id===p.id)continue;
-        if(nx<q.x+q.w && nx+p.w>q.x && ny<q.y+q.h && ny+p.h>q.y){
-          note.textContent="ほかの駒が邪魔をしている。";return;
-        }
+      if(!isLegal(p,dir)){
+        note.textContent="そこには動かせない。空いた方向を試してみよう。";
+        return;
       }
-      history.push(pieces.map(function(x){return Object.assign({},x);}));
-      p.x=nx;p.y=ny;moves++;note.textContent="空いた場所を使い、5の通り道を作れ。";
+      history.push(pieces.map(function(o){return Object.assign({},o);}));
+      p.x+=vector[dir][0];p.y+=vector[dir][1];
+      moves++;lastPiece=id;
+      note.textContent="駒が滑った。";
       draw();
-      if(p.id==="5" && nx===1 && ny===3) {
-        won=true; note.textContent="5が出口に到達した。箱の底が開く。";
-        board.classList.add("mg-cleared");
-        win();
-      }
+      if(p.id==="5" && p.x===1 && p.y===3)clearLevel();
     }
-    function onClick(e) {
-      var piece=e.target.closest("[data-piece]");
-      if(piece){selected=piece.dataset.piece; draw();return;}
-      var dir=e.target.closest("[data-dir]");
-      if(dir){move(dir.dataset.dir);return;}
+    function clearLevel() {
+      stageComplete=true;
+      board.classList.add("mg-cleared");
+      note.textContent="5が出口へ届いた！";
+      var last=levelIndex===levels.length-1;
+      next.innerHTML=
+        '<div class="mg-win appear"><p class="mg-win-label">STAGE '+(levelIndex+1)+' CLEAR / '+levels.length+'</p>'+
+        '<h3>'+(last?'すべての箱が開いた。':'次の箱が現れた。')+'</h3>'+
+        '<p>'+(last?'箱の底に記録が残されている。':'次のステージでは、別の数字の駒が加わる。')+'</p>'+
+        (last?'':'<button type="button" class="button button--gold" data-act="next">STAGE '+(levelIndex+2)+' へ進む ↗</button>')+
+        '</div>';
+      if(last){finished=true;win();}
+    }
+    function onClick(e){
       var act=e.target.closest("[data-act]");
-      if(!act)return;
-      if(act.dataset.act==="reset"){board.classList.remove("mg-cleared");reset();}
-      if(act.dataset.act==="undo" && history.length && !won){pieces=history.pop();moves=Math.max(0,moves-1);note.textContent="一手前に戻した。";draw();}
+      if(act){
+        if(act.dataset.act==="next" && stageComplete && !finished){load(levelIndex+1);return;}
+        if(act.dataset.act==="reset" && !finished){load(levelIndex);return;}
+        if(act.dataset.act==="undo" && history.length && !stageComplete && !finished){
+          pieces=history.pop();moves=Math.max(0,moves-1);note.textContent="一手前に戻した。";draw();return;
+        }
+        return;
+      }
+      var button=e.target.closest("[data-piece]");
+      if(!button)return;
+      if(suppressClick){suppressClick=false;return;}
+      if(stageComplete||finished)return;
+      var id=button.dataset.piece,p=pieces.find(function(o){return o.id===id;});
+      var dir=chooseDirection(p,{x:e.clientX,y:e.clientY});
+      if(!dir){note.textContent="その駒はまだ動かせない。";return;}
+      step(id,dir);
     }
     function onDown(e){
       var p=e.target.closest("[data-piece]");
-      if(p){touch={id:p.dataset.piece,x:e.clientX,y:e.clientY};}
+      suppressClick=false;
+      touch=p?{id:p.dataset.piece,x:e.clientX,y:e.clientY}:null;
     }
     function onUp(e){
       if(!touch)return;
-      var dx=e.clientX-touch.x,dy=e.clientY-touch.y;
-      var id=touch.id;touch=null;
-      if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
-      selected=id;
-      move(Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up"));
+      var dx=e.clientX-touch.x,dy=e.clientY-touch.y,id=touch.id;
+      touch=null;
+      if(Math.max(Math.abs(dx),Math.abs(dy))<23)return;
+      suppressClick=true;
+      var dir=Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up");
+      step(id,dir);
     }
-    function onKey(e){var dir=keyDirection(e);if(dir){e.preventDefault();move(dir);}}
+    function onCancel(){touch=null;}
+    function onKey(e) {
+      if(!root.isConnected||stageComplete||finished)return;
+      var d=keyDirection(e);
+      if(!d)return;
+      e.preventDefault();
+      var focused=document.activeElement;
+      var id=(focused && focused.dataset && focused.dataset.piece)||lastPiece;
+      step(id,d);
+    }
     root.addEventListener("click",onClick);
     root.addEventListener("pointerdown",onDown);
     root.addEventListener("pointerup",onUp);
+    root.addEventListener("pointercancel",onCancel);
     document.addEventListener("keydown",onKey);
-    draw();
-    return function(){root.removeEventListener("click",onClick);root.removeEventListener("pointerdown",onDown);root.removeEventListener("pointerup",onUp);document.removeEventListener("keydown",onKey);};
+    load(0);
+    return function () {
+      root.removeEventListener("click",onClick);
+      root.removeEventListener("pointerdown",onDown);
+      root.removeEventListener("pointerup",onUp);
+      root.removeEventListener("pointercancel",onCancel);
+      document.removeEventListener("keydown",onKey);
+    };
   }
   function maze(root, win) {
     var map=["S..#..","##.#.#","...#..",".#...#",".#.#..","...#.G"];
