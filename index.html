@@ -211,13 +211,13 @@
       *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
   </style>
-<link rel="stylesheet" href="./mini-games.css?v=06">
+<link rel="stylesheet" href="./mini-games.css?v=07">
 </head>
 <body>
 <div class="site">
   <header class="masthead">
     <div class="mark">UNNAMED / THREE</div>
-    <span class="version">PROTOTYPE 0.6<br>WEB BUILD</span>
+    <span class="version">PROTOTYPE 0.7<br>WEB BUILD</span>
   </header>
 
   <main id="homeView">
@@ -293,7 +293,7 @@
   <footer class="footer"><span>© 鈾 / ORIGINAL PUZZLE PROJECT</span><span>STATUS: IN DEVELOPMENT</span></footer>
 </div>
 <div class="blackout" id="blackout" aria-hidden="true"></div>
-<script src="./mini-games.js?v=06"></script>
+<script src="./mini-games.js?v=07"></script>
 <script>
 (() => {
   'use strict';
@@ -879,7 +879,7 @@
         '<h1 class="scene-title">' + escapeHtml(stage.title) + '</h1>' +
         '<div class="mg-host" id="miniGameHost"></div>' +
         '<div id="miniGameReward" role="status" aria-live="polite"></div>' +
-        '<p class="scene-footnote">一つのコードにつき一つの操作型ステージ。クリアすると別の区画の記録が開く。</p>';
+        '<p class="scene-footnote">' + (stage.game === 'slider' ? '数字の箱は全3ステージ。すべて攻略すると区画1のコードが現れる。' : 'このコードでは独立した操作型ミニゲームが起動する。') + '</p>';
       const mount = window.ThreeGatesMiniGames?.mount;
       if (!mount) {
         document.getElementById('miniGameHost').textContent = 'ミニゲームの読み込みに失敗しました。ページを再読み込みしてください。';
