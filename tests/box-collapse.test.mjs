@@ -148,10 +148,44 @@ assert(!site.classList.contains('tg-detached'));
 assert(!site.classList.contains('tg-falling'));
 assert(appended[0].removed);
 
+// A second invocation must create a NEW set of flying fragments; no stale
+// active state may swallow the second collapse after returning to INDEX.
+const firstNumberOfLayers=appended.length;
+const beforeSecondJobs=jobs.length;
+collapse.run({site,scene,reduceMotion:false,onReturn:function(){returned++;}});
+assert.equal(appended.length,firstNumberOfLayers+1,'Re-entry needs fresh fragments');
+assert(site.classList.contains('tg-detached'),'Second run needs a fresh detached scene');
+const secondJobs=jobs.slice(beforeSecondJobs);
+assert.equal(secondJobs.length,3);
+secondJobs.find(job=>job.delay===2500).fn();
+assert(appended.at(-1).classList.contains('tg-frozen'));
+secondJobs.find(job=>job.delay===3100).fn();
+assert(appended.at(-1).classList.contains('tg-dropping'));
+secondJobs.find(job=>job.delay===6500).fn();
+assert.equal(returned,2,'The second collapse must also return home');
+collapse.clear();
+assert(appended.at(-1).removed);
+assert(!site.classList.contains('tg-detached'));
+
+// Even if precise word extraction is unsupported in a particular browser,
+// the emergency path must still fragment the scene and return normally.
+const originalQuery=site.querySelectorAll;
+site.querySelectorAll=function(selector){
+  if(selector.includes('#miniGameHost'))throw new Error('Simulated DOM range failure');
+  return originalQuery(selector);
+};
+const fallbackStart=appended.length;
+collapse.run({site,scene,reduceMotion:false,onReturn:function(){returned++;}});
+assert.equal(appended.length,fallbackStart+1,'Fallback must still create fragments');
+assert(appended.at(-1).children.some(el=>el.classList.contains('tg-flight-piece')));
+assert(site.classList.contains('tg-detached'));
+collapse.clear();
+site.querySelectorAll=originalQuery;
+
 assert(css.includes('.tg-debris-layer.tg-frozen .tg-flight-piece'));
 assert(css.includes('.tg-debris-layer.tg-dropping .tg-flight-piece'));
 assert(css.includes('@keyframes tg-flight-crash'));
 assert(css.includes('@media(prefers-reduced-motion:reduce)'));
-assert(index.includes('collapse.js?v=19')&&index.includes('collapse.css?v=19'));
+assert(index.includes('collapse.js?v=20')&&index.includes('collapse.css?v=20'));
 
 console.log('Independent flying words, sudden freeze, separate top-down collapse, and cleanup passed.');
