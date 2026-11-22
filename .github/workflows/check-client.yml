@@ -13,6 +13,7 @@ on:
       - 'tests/box-destruction.test.mjs'
       - 'tests/box-collapse.test.mjs'
       - 'tests/box-persistence.test.mjs'
+      - 'tests/box-foreshadow.test.mjs'
       - '.github/workflows/check-client.yml'
   workflow_dispatch:
 jobs:
@@ -31,8 +32,8 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=22') || !html.includes('mini-games.css?v=22')) throw new Error('Missing minigame assets');
-          if (!html.includes('collapse.js?v=22') || !html.includes('collapse.css?v=22')) throw new Error('Missing separate collapse assets');
+          if (!html.includes('mini-games.js?v=23') || !html.includes('mini-games.css?v=23')) throw new Error('Missing minigame assets');
+          if (!html.includes('collapse.js?v=23') || !html.includes('collapse.css?v=23')) throw new Error('Missing separate collapse assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
@@ -57,6 +58,8 @@ jobs:
         run: node tests/box-physics.test.mjs
       - name: Verify all three levels are solvable with two empty cells
         run: node tests/box-layout.test.mjs
+      - name: Verify four foreshadowing and calm puzzle wording
+        run: node tests/box-foreshadow.test.mjs
       - name: Verify hidden HP tap-count easter egg
         run: node tests/box-secret.test.mjs
       - name: Verify per-tap damage and special five-destruction failure
