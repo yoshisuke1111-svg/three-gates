@@ -22,7 +22,7 @@
   var vector = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
   // The 5 tile is a 2x2 piece. Other tiles use the digit as a shape label.
   // Each level is an independently solvable 4x5 board; only the third gives a code.
-  function slider(root, win) {
+  function slider(root, win, onDestroyed) {
     var levels = [
       {title:"最初の箱", label:"1 ×14 + 5", items:[
         ["5",1,0,2,2],
@@ -56,7 +56,7 @@
     // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
-    var hiddenTapCount=0, hiddenTap=null, HP_TAPS=30;
+    var hiddenTapCount=0, hiddenTap=null, HP_TAPS=30, focusedHpId="5";
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
@@ -74,17 +74,22 @@
     var next=root.querySelector("#mg-slide-next");
     var hpPanel=root.querySelector("#mg-slide-hp");
     var hpStats=root.querySelector("#mg-slide-hp-stats");
+    var hpBar=root.querySelector("#mg-slide-hp .mg-secret-hp-fill");
     var MAX_HP_BY_NUMBER={"1":100,"2":200,"3":200,"5":300};
     function hpFor(number) {
       return MAX_HP_BY_NUMBER[number] || 0;
     }
     function updateHpStats() {
       if(!hpStats || hiddenTapCount<HP_TAPS)return;
+      var active=pieces.find(function(p){return p.id===focusedHpId;}) ||
+                 pieces.find(function(p){return p.id==="5";}) || pieces[0];
+      if(!active){hpStats.textContent="";return;}
+      focusedHpId=active.id;
       var types=Array.from(new Set(pieces.map(function(p){return p.n;})))
         .sort(function(a,b){return Number(a)-Number(b);});
-      hpStats.textContent=types.map(function(n){
-        return n+" : "+hpFor(n);
-      }).join("   /   ");
+      hpStats.textContent="選択 "+active.n+" : "+active.hp+" / "+active.maxHp+
+        "  ·  "+types.map(function(n){return n+"="+hpFor(n);}).join(" / ");
+      if(hpBar)hpBar.style.width=Math.max(0,100*active.hp/active.maxHp)+"%";
     }
     function revealHiddenHp() {
       if(!hpPanel || !hpPanel.hidden)return;
@@ -109,8 +114,46 @@
     function snapshot() {
       return pieces.map(function(p){return Object.assign({},p);});
     }
+    function restoreUndoPositions(before) {
+      // Undo movement only. A destroyed piece must NOT reappear, and an
+      // earlier position snapshot must not heal a piece damaged later.
+      pieces.forEach(function(p){
+        var past=before.find(function(q){return q.id===p.id;});
+        if(past){p.x=past.x;p.y=past.y;}
+      });
+    }
+    function damagePiece(id) {
+      if(hiddenTapCount<HP_TAPS || stageComplete || finished)return;
+      var piece=pieces.find(function(p){return p.id===id;});
+      if(!piece || piece.hp<=0)return;
+      focusedHpId=id;
+      piece.hp=Math.max(0,piece.hp-1);
+      if(piece.hp>0){draw();return;}
+      if(piece.id==="5"){
+        stageComplete=true;
+        finished=true;
+        draw(); // Keep the shattered five in view as the world collapses.
+        var destroyed=board.querySelector('[data-piece="5"]');
+        if(destroyed)destroyed.classList.add("mg-piece-shattered");
+        note.textContent="5のHPが0になった。箱の世界が崩れ始める……";
+        if(typeof onDestroyed==="function")onDestroyed();
+        return;
+      }
+      pieces=pieces.filter(function(p){return p.id!==id;});
+      note.textContent="駒 "+piece.n+" が壊れた。そこに空きが生まれた。";
+      draw();
+    }
+    function handleBoardTap(pieceId) {
+      if(stageComplete || finished)return;
+      if(hiddenTapCount<HP_TAPS){
+        registerHiddenTap();
+        return; // Unlocking the HP display does not deal damage.
+      }
+      if(pieceId)damagePiece(pieceId);
+    }
     function load(index) {
       hiddenTap=null;
+      focusedHpId="5";
       levelIndex=index;
       pieces=freshItems(index);
       history=[];moves=0;lastPiece="5";stageComplete=false;drag=null;
@@ -124,6 +167,9 @@
       draw();
     }
     function draw() {
+      board.querySelectorAll("[data-piece]").forEach(function(button){
+        if(!pieces.some(function(p){return p.id===button.dataset.piece;}))button.remove();
+      });
       pieces.forEach(function(p){
         var btn=board.querySelector('[data-piece="'+p.id+'"]');
         if(!btn){
@@ -272,7 +318,10 @@
     function onClick(e) {
       // Keyboard/assistive clicks have detail 0; physical clicks are already
       // counted on pointerup to prevent double-counting.
-      if(e.detail===0 && e.target.closest("#mg-slide-board"))registerHiddenTap();
+      if(e.detail===0 && e.target.closest("#mg-slide-board")){
+        var keyboardPiece=e.target.closest("[data-piece]");
+        handleBoardTap(keyboardPiece && keyboardPiece.dataset.piece);
+      }
       var act=e.target.closest("[data-act]");
       if(!act)return; // Tapping a piece never makes it jump.
       if(act.dataset.act==="next" && stageComplete && !finished){
@@ -282,7 +331,8 @@
         load(levelIndex);return;
       }
       if(act.dataset.act==="undo" && !stageComplete && history.length){
-        pieces=history.pop();moves=Math.max(0,moves-1);
+        restoreUndoPositions(history.pop());
+        moves=Math.max(0,moves-1);
         note.textContent="一手前の位置へ戻した。";draw();
       }
     }
@@ -291,7 +341,9 @@
       // Track a short click on either a piece or the empty board, but never
       // interpret a drag as repeated taps.
       if(e.target.closest("#mg-slide-board")){
-        hiddenTap={pointerId:e.pointerId,x:e.clientX,y:e.clientY};
+        var targetPiece=e.target.closest("[data-piece]");
+        hiddenTap={pointerId:e.pointerId,x:e.clientX,y:e.clientY,
+                   pieceId:targetPiece && targetPiece.dataset.piece};
       }
       var btn=e.target.closest("[data-piece]");
       if(!btn)return;
@@ -356,12 +408,19 @@
       checkWin(current.piece);
     }
     function onUp(e){
+      var tap=null;
       if(hiddenTap && hiddenTap.pointerId===e.pointerId){
         var travel=Math.hypot(e.clientX-hiddenTap.x,e.clientY-hiddenTap.y);
-        if(travel<9 && !stageComplete && !finished)registerHiddenTap();
+        if(travel<9 && (!drag || !drag.active) && !stageComplete && !finished){
+          tap=hiddenTap.pieceId;
+        }
+        // Empty-space taps still unlock the secret, but do not deal damage.
+        if(travel<9 && (!drag || !drag.active) && !stageComplete && !finished &&
+           !tap)tap="";
         hiddenTap=null;
       }
-      endDrag(e,false);
+      endDrag(e,false); // Release the pointer before potentially removing a tile.
+      if(tap!==null)handleBoardTap(tap);
     }
     function onCancel(e){
       if(hiddenTap && hiddenTap.pointerId===e.pointerId)hiddenTap=null;
@@ -532,10 +591,10 @@
   }
   var factories={slider:slider, maze:maze, lights:lights, mirror:mirror, memory:memory};
   window.ThreeGatesMiniGames={
-    mount:function(root,kind,onWin){
+    mount:function(root,kind,onWin,onDestroyed){
       var f=factories[kind];if(!f)throw new Error("Unknown minigame: "+kind);
       var completed=false;
-      return f(root,function(){if(completed)return;completed=true;onWin();});
+      return f(root,function(){if(completed)return;completed=true;onWin();},onDestroyed);
     }
   };
 })();
