@@ -28,7 +28,7 @@ jobs:
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
           const games = fs.readFileSync('mini-games.js', 'utf8');
-          for (const expected of ['function moveFree(piece,dx,dy)', 'function shiftAxis(piece,axis,delta)', 'function endDrag(e,cancelled)']) {
+          for (const expected of ['function moveFree(piece,dx,dy,ctx)', 'function shiftAxis(piece,axis,delta,ctx)', 'function endDrag(e,cancelled)']) {
             if (!games.includes(expected)) throw new Error('Missing continuous-drag feature: '+expected);
           }
           if (games.includes('Math.round(distance/cell)')) throw new Error('Old grid snapping still present');
