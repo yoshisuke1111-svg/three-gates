@@ -581,7 +581,7 @@
       '<div class="mg-mirror-rows"><div class="mg-mirror-name">上の記録</div><div class="mg-mirror-row mg-fixed" id="mg-mirror-top"></div>'+
       '<div class="mg-mirror-name">下の記録</div><div class="mg-mirror-row" id="mg-mirror-bottom"></div></div>'+
       '<p class="mg-help mg-center">6つのスイッチはそれぞれ独立している。タップするたび0と1が入れ替わる。</p>'+
-      '<p class="mg-note" id="mg-mirror-note" role="status">上下の6桁を照合せよ。</p>';
+      '<p class="mg-note" id="mg-mirror-note" role="status">上下の6桁が一致すると仕掛けが開きます。</p>';
     var top=root.querySelector("#mg-mirror-top"), bottom=root.querySelector("#mg-mirror-bottom"),note=root.querySelector("#mg-mirror-note");
     top.innerHTML=upper.split("").map(function(c){return '<span class="mg-bit">'+c+'</span>';}).join("");
     function draw(){bottom.innerHTML=bits.map(function(b,i){return '<button type="button" class="mg-bit mg-bit-switch" data-bit="'+i+'" aria-label="'+(i+1)+'桁目を反転">'+b+'</button>';}).join("");}
