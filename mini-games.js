@@ -42,162 +42,122 @@
         ["1a",3,2,1,1],["1b",0,4,1,1],["1c",1,4,1,1],["1d",3,0,1,1]
       ]}
     ];
+    // Coordinates are continuous board units, not discrete grid cells.
+    // The original arrangement remains 4 x 5, but pieces can end at any position.
+    var W=4,H=5, EPS=0.000001;
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
-      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口へ。<b>駒を指で引っ張って</b>通り道を作ろう。</p>'+
-      '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="5を出口まで移動する数字の箱"></div>'+
+      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口まで運べ。駒を<b>好きな方向へ自由に引っ張ろう</b>。</p>'+
+      '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="仕切りのない箱。駒は自由な位置に動かせる"></div>'+
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
-      '<div class="mg-side"><p class="mg-caption">NUMBERED BOX</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
-      '<p class="mg-help">駒を押さえたまま指を動かし、<b>離した場所で止める</b>。途中で壁や別の駒に当たると、それ以上は進まない。タップだけでは動かない。</p>'+
+      '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
+      '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。壁や別の駒をすり抜けることはできない。</p>'+
       '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">このステージをやり直す</button></div>'+
       '<p class="mg-note" id="mg-slide-note" aria-live="polite"></p></div></div>'+
       '<div id="mg-slide-next" aria-live="polite"></div>';
     var board=root.querySelector("#mg-slide-board");
     var note=root.querySelector("#mg-slide-note");
     var next=root.querySelector("#mg-slide-next");
+
     function freshItems(index) {
       return levels[index].items.map(function (p) {
         return {id:p[0],n:p[0].charAt(0),x:p[1],y:p[2],w:p[3],h:p[4]};
       });
     }
+    function snapshot() {
+      return pieces.map(function(p){return Object.assign({},p);});
+    }
     function load(index) {
       levelIndex=index;
-      pieces=freshItems(levelIndex);
-      history=[];moves=0;lastPiece="5";stageComplete=false;
-      drag=null;
+      pieces=freshItems(index);
+      history=[];moves=0;lastPiece="5";stageComplete=false;drag=null;
       board.classList.remove("mg-cleared");
       board.replaceChildren();
       next.replaceChildren();
-      root.querySelector("#mg-slide-stage").textContent="STAGE "+(levelIndex+1)+" / "+levels.length;
-      root.querySelector("#mg-slide-types").textContent=levels[levelIndex].label;
-      root.querySelector("#mg-slide-title").textContent=levels[levelIndex].title;
-      note.textContent="駒を押さえて、指で引っ張ろう。";
+      root.querySelector("#mg-slide-stage").textContent="STAGE "+(index+1)+" / "+levels.length;
+      root.querySelector("#mg-slide-types").textContent=levels[index].label;
+      root.querySelector("#mg-slide-title").textContent=levels[index].title;
+      note.textContent="どの駒も指でつかんで、自由な位置まで動かせる。";
       draw();
     }
-    function isLegal(piece,dir) {
-      if(!vector[dir])return false;
-      var nx=piece.x+vector[dir][0],ny=piece.y+vector[dir][1];
-      if(nx<0||ny<0||nx+piece.w>4||ny+piece.h>5)return false;
-      return pieces.every(function(q){
-        return q.id===piece.id || !(nx<q.x+q.w && nx+piece.w>q.x && ny<q.y+q.h && ny+piece.h>q.y);
-      });
-    }
-    function legalDirs(piece) {
-      return ["left","right","up","down"].filter(function(d){return isLegal(piece,d);});
-    }
     function draw() {
-      pieces.forEach(function(p) {
+      pieces.forEach(function(p){
         var btn=board.querySelector('[data-piece="'+p.id+'"]');
-        if(!btn) {
+        if(!btn){
           btn=document.createElement("button");
           btn.type="button";btn.dataset.piece=p.id;
           btn.innerHTML="<span>"+p.n+"</span>";
+          btn.setAttribute("aria-label","駒"+p.n+"を自由にドラッグして動かす");
           board.appendChild(btn);
         }
-        var movable=legalDirs(p).length>0;
-        btn.className="mg-piece mg-piece-"+p.n+(movable?" mg-piece-movable":" mg-piece-blocked")+
+        btn.className="mg-piece mg-piece-"+p.n+" mg-piece-movable"+
           (drag && drag.id===p.id?" is-dragging":"");
-        btn.setAttribute("aria-label","駒"+p.n+(movable?"、ドラッグして移動":"、現在動かせない"));
-        btn.style.left=(p.x*25)+"%";btn.style.top=(p.y*20)+"%";
-        if(!drag || drag.id!==p.id)btn.style.transform="";
-
-        btn.style.width=(p.w*25)+"%";btn.style.height=(p.h*20)+"%";
+        btn.style.left=(p.x/W*100)+"%";
+        btn.style.top=(p.y/H*100)+"%";
+        btn.style.width=(p.w/W*100)+"%";
+        btn.style.height=(p.h/H*100)+"%";
       });
       root.querySelector("#mg-slide-counter").textContent="MOVES "+String(moves).padStart(3,"0");
     }
-    function maxSteps(piece, dir) {
-      // Look ahead one cell at a time: the preview may never pass through a piece.
-      var test={id:piece.id,x:piece.x,y:piece.y,w:piece.w,h:piece.h};
-      var count=0;
-      while(count<5 && isLegal(test,dir)) {
-        test.x+=vector[dir][0];
-        test.y+=vector[dir][1];
-        count++;
+    function showPiece(p) {
+      var btn=board.querySelector('[data-piece="'+p.id+'"]');
+      if(btn){
+        btn.style.left=(p.x/W*100)+"%";
+        btn.style.top=(p.y/H*100)+"%";
       }
-      return count;
     }
-    function dragPosition(event) {
-      if(!drag || event.pointerId!==drag.pointerId)return;
-      var dx=event.clientX-drag.startX;
-      var dy=event.clientY-drag.startY;
-      if(!drag.axis) {
-        if(Math.max(Math.abs(dx),Math.abs(dy))<5)return;
-        drag.axis=Math.abs(dx/drag.cellX)>=Math.abs(dy/drag.cellY)?"x":"y";
-      }
-      var horizontal=drag.axis==="x";
-      var raw=horizontal?dx:dy;
-      var dir=horizontal?(raw<0?"left":"right"):(raw<0?"up":"down");
-      var cell=horizontal?drag.cellX:drag.cellY;
-      var capacity=maxSteps(drag.piece,dir)*cell;
-      // The tile stays under the finger until a wall or another tile blocks it.
-      var preview=Math.sign(raw)*Math.min(Math.abs(raw),capacity);
-      drag.preview=preview;
-      drag.direction=dir;
-      drag.pieceElement.style.transform=horizontal?
-        "translate3d("+preview+"px,0,0)":"translate3d(0,"+preview+"px,0)";
-    }
-    function endDrag(event,cancelled) {
-      if(!drag || event.pointerId!==drag.pointerId)return;
-      if(!cancelled)dragPosition(event);
-      var current=drag;
-      drag=null;
-      var el=current.pieceElement;
-      el.classList.remove("is-dragging");
-      if(el.hasPointerCapture && el.hasPointerCapture(current.pointerId)){
-        try{el.releasePointerCapture(current.pointerId);}catch(ignore){}
-      }
-      if(cancelled || !current.axis || stageComplete || finished){
-        el.style.transform="";
-        draw();
-        return;
-      }
-      var distance=Math.abs(current.preview);
-      var cell=current.axis==="x"?current.cellX:current.cellY;
-      var amount=Math.round(distance/cell);
-      var piece=current.piece, dir=current.direction;
-      amount=Math.min(amount,maxSteps(piece,dir));
-      if(amount===0){
-        el.style.transform=""; // return gently to origin, but never move on a tap
-        draw();
-        return;
-      }
-      history.push(pieces.map(function(o){return Object.assign({},o);}));
-      piece.x+=vector[dir][0]*amount;
-      piece.y+=vector[dir][1]*amount;
-      moves++;
-      lastPiece=piece.id;
-      note.textContent="指を離した位置で駒が止まった。";
-      // Change the grid position without flashing back to the start.
-      // Preserve the finger position as a residual transform, then ease into the cell.
-      var remainder=current.preview-Math.sign(current.preview)*amount*cell;
-      el.style.transition="none";
-      draw();
-      el.style.transform=current.axis==="x"?
-        "translate3d("+remainder+"px,0,0)":"translate3d(0,"+remainder+"px,0)";
-      el.getBoundingClientRect(); // flush the release position before enabling easing
-      el.style.transition="";
-      requestAnimationFrame(function(){
-        if(el.isConnected && !el.classList.contains("is-dragging"))el.style.transform="";
+    // A swept, axis-by-axis collision test. Even a fast pointer movement
+    // cannot teleport a piece through an occupied rectangle.
+    function shiftAxis(piece,axis,delta) {
+      if(Math.abs(delta)<EPS)return;
+      var size=axis==="x"?piece.w:piece.h;
+      var limit=axis==="x"?W:H;
+      var current=piece[axis];
+      var target=Math.max(0,Math.min(limit-size,current+delta));
+      var forward=target>current+EPS;
+      var backward=target<current-EPS;
+      if(!forward && !backward)return;
+      pieces.forEach(function(other){
+        if(other.id===piece.id)return;
+        var intersects=axis==="x"?
+          (piece.y<other.y+other.h-EPS && piece.y+piece.h>other.y+EPS):
+          (piece.x<other.x+other.w-EPS && piece.x+piece.w>other.x+EPS);
+        if(!intersects)return;
+        var otherStart=other[axis];
+        var otherEnd=otherStart+(axis==="x"?other.w:other.h);
+        if(forward && otherStart>=current+size-EPS){
+          target=Math.min(target,otherStart-size);
+        }else if(backward && otherEnd<=current+EPS){
+          target=Math.max(target,otherEnd);
+        }
       });
-      if(piece.id==="5" && piece.x===1 && piece.y===3)clearLevel();
+      piece[axis]=Math.max(0,Math.min(limit-size,target));
     }
-    function step(id,dir) {
-      if(stageComplete||finished)return;
-      var p=pieces.find(function(o){return o.id===id;});
-      if(!p)return;
-      if(!isLegal(p,dir)){
-        note.textContent="そこには動かせない。空いた方向を試してみよう。";
-        return;
+    function moveFree(piece,dx,dy) {
+      // Sweep in small increments so diagonal motion follows corners rather
+      // than cutting through them. No integer rounding or grid snapping.
+      var count=Math.max(1,Math.min(100,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/0.12)));
+      var stepX=dx/count,stepY=dy/count;
+      for(var i=0;i<count;i++){
+        if(Math.abs(stepX)>Math.abs(stepY)){
+          shiftAxis(piece,"x",stepX);
+          shiftAxis(piece,"y",stepY);
+        }else{
+          shiftAxis(piece,"y",stepY);
+          shiftAxis(piece,"x",stepX);
+        }
       }
-      history.push(pieces.map(function(o){return Object.assign({},o);}));
-      p.x+=vector[dir][0];p.y+=vector[dir][1];
-      moves++;lastPiece=id;
-      note.textContent="駒が滑った。";
-      draw();
-      if(p.id==="5" && p.x===1 && p.y===3)clearLevel();
+    }
+    function checkWin(piece) {
+      // Approximate alignment is enough: precise pixel-perfect positioning
+      // should never be required after switching off grid snapping.
+      if(piece.id==="5" && piece.y>=H-piece.h-0.025 &&
+         Math.abs(piece.x-(W-piece.w)/2)<=0.25){
+        clearLevel();
+      }
     }
     function clearLevel() {
       stageComplete=true;
@@ -212,54 +172,104 @@
         '</div>';
       if(last){finished=true;win();}
     }
-    function onClick(e){
+    function onClick(e) {
       var act=e.target.closest("[data-act]");
-      if(!act)return; // Tapping a piece NEVER moves it.
-      if(act.dataset.act==="next" && stageComplete && !finished){load(levelIndex+1);return;}
-      if(act.dataset.act==="reset" && !finished){load(levelIndex);return;}
-      if(act.dataset.act==="undo" && history.length && !stageComplete && !finished){
+      if(!act)return; // Tapping a piece never makes it jump.
+      if(act.dataset.act==="next" && stageComplete && !finished){
+        load(levelIndex+1);return;
+      }
+      if(act.dataset.act==="reset" && !finished){
+        load(levelIndex);return;
+      }
+      if(act.dataset.act==="undo" && !stageComplete && history.length){
         pieces=history.pop();moves=Math.max(0,moves-1);
-        note.textContent="一手前に戻した。";draw();
+        note.textContent="一手前の位置へ戻した。";draw();
       }
     }
-    function onDown(e){
+    function onDown(e) {
       if(drag || stageComplete || finished || (e.pointerType==="mouse" && e.button!==0))return;
       var btn=e.target.closest("[data-piece]");
       if(!btn)return;
-      var p=pieces.find(function(o){return o.id===btn.dataset.piece;});
-      if(!p || legalDirs(p).length===0)return;
-      var cellX=board.clientWidth/4,cellY=board.clientHeight/5;
-      if(cellX<=0||cellY<=0)return;
+      var piece=pieces.find(function(p){return p.id===btn.dataset.piece;});
+      if(!piece)return;
+      var unitX=board.clientWidth/W,unitY=board.clientHeight/H;
+      if(unitX<=0||unitY<=0)return;
       drag={
-        id:p.id,piece:p,pieceElement:btn,pointerId:e.pointerId,
-        startX:e.clientX,startY:e.clientY,cellX:cellX,cellY:cellY,
-        axis:null,direction:null,preview:0
+        id:piece.id,piece:piece,element:btn,pointerId:e.pointerId,
+        startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastY:e.clientY,
+        unitX:unitX,unitY:unitY,start:snapshot(),active:false
       };
       btn.classList.add("is-dragging");
-      if(btn.setPointerCapture) {
+      if(btn.setPointerCapture){
         try{btn.setPointerCapture(e.pointerId);}catch(ignore){}
       }
       e.preventDefault();
     }
-    function onMove(e){
-      if(drag && e.pointerId===drag.pointerId) {
-        dragPosition(e);
-        e.preventDefault();
+    function dragMove(e) {
+      if(!drag || drag.pointerId!==e.pointerId)return;
+      var current=drag;
+      if(!current.active){
+        if(Math.hypot(e.clientX-current.startX,e.clientY-current.startY)<4)return;
+        current.active=true;
       }
+      var dx=(e.clientX-current.lastX)/current.unitX;
+      var dy=(e.clientY-current.lastY)/current.unitY;
+      current.lastX=e.clientX;
+      current.lastY=e.clientY;
+      moveFree(current.piece,dx,dy);
+      showPiece(current.piece);
+    }
+    function onMove(e) {
+      if(!drag || drag.pointerId!==e.pointerId)return;
+      dragMove(e);
+      e.preventDefault();
+    }
+    function endDrag(e,cancelled) {
+      if(!drag || drag.pointerId!==e.pointerId)return;
+      if(!cancelled)dragMove(e);
+      var current=drag;
+      drag=null;
+      current.element.classList.remove("is-dragging");
+      if(current.element.hasPointerCapture &&
+         current.element.hasPointerCapture(current.pointerId)){
+        try{current.element.releasePointerCapture(current.pointerId);}catch(ignore){}
+      }
+      var piece=current.piece;
+      var from=current.start.find(function(p){return p.id===piece.id;});
+      var changed=Math.hypot(piece.x-from.x,piece.y-from.y)>0.018;
+      if(cancelled || !changed){
+        piece.x=from.x;piece.y=from.y;draw();
+        return;
+      }
+      history.push(current.start);
+      moves++;
+      lastPiece=piece.id;
+      note.textContent="駒は離した場所に止まる。マス目に戻す必要はない。";
+      draw();
+      checkWin(piece);
     }
     function onUp(e){endDrag(e,false);}
     function onCancel(e){endDrag(e,true);}
     function onLostCapture(e){
-      if(drag && e.pointerId===drag.pointerId)endDrag(e,true);
+      if(drag && drag.pointerId===e.pointerId)endDrag(e,true);
     }
     function onKey(e) {
-      if(!root.isConnected||stageComplete||finished)return;
-      var d=keyDirection(e);
-      if(!d)return;
+      if(!root.isConnected || stageComplete || finished || drag)return;
+      var dir=keyDirection(e);
+      if(!dir)return;
       e.preventDefault();
       var focused=document.activeElement;
       var id=(focused && focused.dataset && focused.dataset.piece)||lastPiece;
-      step(id,d);
+      var p=pieces.find(function(item){return item.id===id;});
+      if(!p)return;
+      var start=snapshot(),vx=vector[dir][0]*0.25,vy=vector[dir][1]*0.25;
+      moveFree(p,vx,vy);
+      if(Math.hypot(p.x-start.find(function(q){return q.id===id;}).x,
+                    p.y-start.find(function(q){return q.id===id;}).y)>0.018){
+        history.push(start);moves++;lastPiece=id;
+        note.textContent="キー操作で少し動かした。";draw();
+        checkWin(p);
+      }
     }
     root.addEventListener("click",onClick);
     root.addEventListener("pointerdown",onDown);
@@ -269,10 +279,9 @@
     root.addEventListener("lostpointercapture",onLostCapture);
     document.addEventListener("keydown",onKey);
     load(0);
-    return function () {
+    return function() {
       if(drag){
-        drag.pieceElement.style.transform="";
-        drag.pieceElement.classList.remove("is-dragging");
+        drag.element.classList.remove("is-dragging");
         drag=null;
       }
       root.removeEventListener("click",onClick);
