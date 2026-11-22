@@ -25,7 +25,7 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=15') || !html.includes('mini-games.css?v=15')) throw new Error('Missing minigame assets');
+          if (!html.includes('mini-games.js?v=16') || !html.includes('mini-games.css?v=16')) throw new Error('Missing minigame assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
@@ -41,6 +41,7 @@ jobs:
             throw new Error('Missing gentle push collision handling');
           }
           if (games.includes('if(!cancelled)dragMove(e);')) throw new Error('Pointerup still shifts piece');
+          if (!games.includes('MAX_HP_BY_NUMBER={"1":100,"2":200,"3":200,"5":300}')) throw new Error('Block HP values not set correctly');
           console.log('Syntax, assets and free-form movement checks passed');
           NODE
       - name: Regression test dragging and collision response
