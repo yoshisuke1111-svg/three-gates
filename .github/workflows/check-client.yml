@@ -23,7 +23,7 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=12') || !html.includes('mini-games.css?v=12')) throw new Error('Missing minigame assets');
+          if (!html.includes('mini-games.js?v=13') || !html.includes('mini-games.css?v=13')) throw new Error('Missing minigame assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
@@ -32,7 +32,7 @@ jobs:
             if (!games.includes(expected)) throw new Error('Missing continuous-drag feature: '+expected);
           }
           if (games.includes('Math.round(distance/cell)')) throw new Error('Old grid snapping still present');
-          if (!games.includes('INSET=0.06') || !games.includes('w:p[3]-2*INSET')) throw new Error('Missing physical block clearance');
+          if (!games.includes('INSET=0.01') || !games.includes('w:p[3]-2*INSET')) throw new Error('Missing physical block clearance');
           if (!games.includes('piece.y+piece.h>=H-INSET-0.05')) throw new Error('Win check not adjusted for clearance');
           if (games.includes('["1f",3,2,1,1]')) throw new Error('Stage 2 remains overcrowded');
           if (!games.includes('PUSH_LIMIT=0.35') || !games.includes('function gentlyPush(')) {
