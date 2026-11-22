@@ -120,6 +120,63 @@ assert.deepEqual(Array.from(fresh,p=>Array.from(p)),[
 
 const index=fs.readFileSync('index.html','utf8');
 assert(index.includes('function triggerBoxCollapse()'),'Global collapse must be wired');
+
+const storageBlockStart=index.indexOf('  function clearLegacyFiveBreakRecord() {');
+const storageBlockEnd=index.indexOf('  function recordReverseStep(mark) {',storageBlockStart);
+assert(storageBlockStart>0&&storageBlockEnd>storageBlockStart);
+function freshPageWithOldFlags(){
+  const local={three_gates_five_destroyed:'yes'};
+  const session={three_gates_five_destroyed:'yes'};
+  const browser={
+    url:'https://example.org/three-gates/?v=022&tg5=1#frag',
+    state:{threeGatesFiveDestroyed:true,other:'keep'}
+  };
+  return vm.runInNewContext([
+    'let fiveWasDestroyed=false;',
+    index.slice(storageBlockStart,storageBlockEnd),
+    'var first=hasFiveBreakRecord();',
+    'rememberFiveBreak();',
+    'var afterBreak=hasFiveBreakRecord();',
+    '({first,afterBreak,local,session,browser});'
+  ].join('\n'),{
+    URL,
+    local,session,browser,
+    localStorage:{removeItem:function(key){delete local[key];}},
+    sessionStorage:{removeItem:function(key){delete session[key];}},
+    document:{set cookie(value){this.lastCookie=value;}},
+    window:{
+      location:{get href(){return browser.url;}},
+      history:{
+        get state(){return browser.state;},
+        replaceState:function(state,unused,url){browser.state=state;browser.url=url;}
+      }
+    }
+  });
+}
+const freshSession=freshPageWithOldFlags();
+assert.equal(freshSession.first,false,'Old stored attempts cannot make first entry the second');
+assert.equal(freshSession.afterBreak,true,'One destruction switches next entry within page to repeat');
+assert.equal(freshSession.local.three_gates_five_destroyed,undefined,'Old local record removed');
+assert.equal(freshSession.session.three_gates_five_destroyed,undefined,'Old session record removed');
+assert(!freshSession.browser.url.includes('tg5='),'Old URL trap removed');
+assert(freshSession.browser.url.includes('v=022'),'Other URL parameters kept');
+assert.equal(freshSession.browser.state.other,'keep');
+assert.equal(freshSession.browser.state.threeGatesFiveDestroyed,undefined);
+
+const freshFirst=vm.runInNewContext([
+  'var repeatFiveBreak=false,INSET=.01;',
+  'function hpFor(type){return {"1":100,"2":200,"3":200,"5":300}[type]||0;}',
+  'var levels=[{items:[["5",1,0,2,2],["1a",0,0,1,1]]}];',
+  src.slice(freshBegin,freshEnd),
+  'freshItems(0).map(p=>[p.id,p.hp,p.maxHp]);'
+].join('\n'));
+assert.deepEqual(Array.from(freshFirst,p=>Array.from(p)),[
+  ['5',300,300],['1a',100,100]
+], 'First attempt always spawns five at 300 HP');
+assert(src.includes('HP_TAPS=repeatFiveBreak?10:30'),
+       'First attempt requires 30 taps, repeat requires 10');
+
+
 // The old failure skipped the collapse callback while the entrance
 // transition had navigating=true, even though the board was already playable.
 const cbStart=index.indexOf('  function triggerBoxCollapse() {');
@@ -128,7 +185,7 @@ assert(cbStart>0&&cbEnd>cbStart,'Collapse callback extraction');
 const early=vm.runInNewContext([
   'var navigating=true,sceneView={hidden:false},fiveWasDestroyed=false,reduceMotion=false;',
   'var persisted=[],runs=[];',
-  'function rememberFiveBreak(){fiveWasDestroyed=true;persisted.push(["three_gates_five_destroyed","yes"]);}',
+  'function rememberFiveBreak(){fiveWasDestroyed=true;}',
   'function goHome(){}',
   'var document={querySelector:function(){return {};}};',
   'var window={ThreeGatesCollapse:{run:function(opts){runs.push(opts);}}};',
@@ -139,12 +196,12 @@ const early=vm.runInNewContext([
 assert.equal(early.runs,1,
   'Even during the entrance animation the second collapse must run');
 assert.equal(early.remembered,true);
-assert.deepEqual(Array.from(early.persisted,p=>Array.from(p)),
-  [['three_gates_five_destroyed','yes']]);
+assert.equal(early.persisted.length,0,'Never persist repeat status across page reloads');
 
 
-assert(index.includes('fiveWasDestroyed = hasFiveBreakRecord();'),'Past destruction must be restored using independent persistence');
-assert(index.includes('rememberFiveBreak();'),'Each destruction must persist its history before checking scene status');
+assert(index.includes('clearLegacyFiveBreakRecord();'),'Old persistent flags must be cleared');
+assert(!index.includes('fiveWasDestroyed = hasFiveBreakRecord();'),'Page load must not inherit past destruction');
+assert(index.includes('rememberFiveBreak();'),'Destruction must mark the current page');
 assert(index.includes("{instantFiveBreak:hasFiveBreakRecord()}"),'Replay condition must be refreshed when opening the game');
 assert(index.includes("stage.game === 'slider' ? triggerBoxCollapse : undefined"),
        'The slider must supply a failure callback');
