@@ -12,7 +12,7 @@ const code=src.slice(a,b);
 
 const sandbox=vm.createContext({});
 const outcomes=vm.runInContext([
-  'var hiddenTapCount=29, HP_TAPS=30, focusedHpId="5", instantFiveBreak=false;'
+  'var hiddenTapCount=29, HP_TAPS=30, focusedHpId="5", instantFiveBreak=false;',
   'var stageComplete=false, finished=false, destroyedCount=0,draws=0,unlocked=0;',
   'var pieces=[',
   '  {id:"1a",n:"1",hp:100,maxHp:100,x:0,y:0},',
