@@ -207,6 +207,88 @@
       .question-clue { font-size: clamp(16px, 4.6vw, 23px); }
       .puzzle-figure { font-size: clamp(16px, 4.4vw, 23px); }
     }
+
+    /* Secret failure ending for the broken "5". Color changes are limited
+       to about two cycles per second; no rapid full-white strobing. */
+    .site.tg-corrupted{overflow:hidden;isolation:isolate}
+    .site.tg-corrupted #sceneView{pointer-events:none}
+    .site.tg-corrupted::before{
+      content:"";
+      position:fixed;inset:0;z-index:20;pointer-events:none;
+      background:linear-gradient(130deg,#c22d9e3c,#0fe9b126,#5a61e630);
+      mix-blend-mode:screen;
+      animation:tg-color-wave 2s steps(1,end) infinite;
+    }
+    .site.tg-corrupted .scene-view,
+    .site.tg-corrupted .masthead,
+    .site.tg-corrupted .mg-host{
+      animation:tg-color-rupture 2s steps(1,end) infinite;
+    }
+    .site.tg-corrupted .scene-title,
+    .site.tg-corrupted .scene-topline,
+    .site.tg-corrupted .scene-route,
+    .site.tg-corrupted .mg-piece,
+    .site.tg-corrupted .back{
+      animation:tg-text-chaos 2s steps(1,end) infinite;
+    }
+    @keyframes tg-color-wave {
+      0%,24%{filter:hue-rotate(0deg);opacity:.24}
+      25%,49%{filter:hue-rotate(110deg);opacity:.34}
+      50%,74%{filter:hue-rotate(230deg);opacity:.26}
+      75%,100%{filter:hue-rotate(315deg);opacity:.35}
+    }
+    @keyframes tg-color-rupture{
+      0%,24%{background-color:#331838;color:#fbe2f2;border-color:#e76fba}
+      25%,49%{background-color:#123c38;color:#e5fff0;border-color:#39e4ac}
+      50%,74%{background-color:#27264d;color:#e5e7ff;border-color:#9388fc}
+      75%,100%{background-color:#4c2e17;color:#fff0da;border-color:#ffbe6d}
+    }
+    @keyframes tg-text-chaos{
+      0%,24%{color:#ff9edd;text-shadow:3px -1px #1ed8f0;transform:translate(3px,-2px)}
+      25%,49%{color:#8bffe1;text-shadow:-3px 1px #ff5895;transform:translate(-3px,2px)}
+      50%,74%{color:#d6b3ff;text-shadow:2px 3px #fdda58;transform:translate(2px,3px)}
+      75%,100%{color:#ffe0a2;text-shadow:-2px -2px #36e3e2;transform:translate(-2px,-2px)}
+    }
+    .site.tg-falling::before{animation:none;opacity:0}
+    .site.tg-falling .masthead,
+    .site.tg-falling .scene-nav,
+    .site.tg-falling .scene-topline,
+    .site.tg-falling .scene-title,
+    .site.tg-falling .mg-host,
+    .site.tg-falling .scene-footnote,
+    .site.tg-falling .footer{
+      animation:tg-collapse-fall .95s cubic-bezier(.55,.08,.9,.42) both!important;
+    }
+    .site.tg-falling .masthead{animation-delay:0s!important}
+    .site.tg-falling .scene-nav{animation-delay:.16s!important}
+    .site.tg-falling .scene-topline{animation-delay:.30s!important}
+    .site.tg-falling .scene-title{animation-delay:.45s!important}
+    .site.tg-falling .mg-host{animation-delay:.65s!important}
+    .site.tg-falling .scene-footnote{animation-delay:.83s!important}
+    .site.tg-falling .footer{animation-delay:1.0s!important}
+    @keyframes tg-collapse-fall{
+      0%{opacity:1;transform:translateY(0) rotate(0deg)}
+      22%{opacity:1;transform:translateY(-12px) rotate(-2deg)}
+      100%{opacity:0;transform:translateY(110vh) rotate(8deg)}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .site.tg-corrupted::before{animation:none!important;opacity:.12}
+      .site.tg-corrupted .scene-view,
+      .site.tg-corrupted .masthead,
+      .site.tg-corrupted .mg-host,
+      .site.tg-corrupted .scene-title,
+      .site.tg-corrupted .scene-topline,
+      .site.tg-corrupted .scene-route,
+      .site.tg-corrupted .mg-piece,
+      .site.tg-corrupted .back{animation:none!important}
+      .site.tg-falling .masthead,
+      .site.tg-falling .scene-nav,
+      .site.tg-falling .scene-topline,
+      .site.tg-falling .scene-title,
+      .site.tg-falling .mg-host,
+      .site.tg-falling .scene-footnote,
+      .site.tg-falling .footer{animation:none!important;opacity:.15}
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
@@ -666,6 +748,7 @@
   let typingToken = 0;
   let skipWriting = false;
   let miniGameCleanup = null;
+  let collapseTimers = [];
   let completedTutorial = false;
   let boxSolved = false;
   let tutorialErrors = 0;
@@ -697,6 +780,25 @@
   setTutorialHeader();
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   function escapeHtml(s) { return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+  function clearBoxCollapse() {
+    collapseTimers.forEach(clearTimeout);
+    collapseTimers = [];
+    document.querySelector('.site')?.classList.remove('tg-corrupted','tg-falling');
+    sceneView.inert = false;
+  }
+  function triggerBoxCollapse() {
+    if (navigating || !sceneView || sceneView.hidden) return;
+    const site = document.querySelector('.site');
+    if (!site || site.classList.contains('tg-corrupted')) return;
+    site.classList.add('tg-corrupted');
+    sceneView.inert = true;
+    collapseTimers.push(setTimeout(() => {
+      site.classList.add('tg-falling');
+    }, reduceMotion ? 150 : 1900));
+    collapseTimers.push(setTimeout(() => {
+      goHome();
+    }, reduceMotion ? 800 : 4300));
+  }
   async function transition(render) {
     if (navigating) return;
     navigating = true;
@@ -704,6 +806,7 @@
     blackout.classList.add('is-active');
     await delay(reduceMotion ? 30 : 850);
     if (miniGameCleanup) { miniGameCleanup(); miniGameCleanup = null; }
+    clearBoxCollapse();
     render();
     window.scrollTo({ top: 0, behavior: 'instant' });
     await delay(reduceMotion ? 20 : 120);
@@ -901,7 +1004,7 @@
           '<div class="mg-win-code">' + escapeHtml(reward.finalCode || reward.code) + '</div>' +
           '<button type="button" class="button button--gold" id="miniGameToHome">INDEX に戻る ↗</button>' +
           '</div>';
-      });
+      }, stage.game === 'slider' ? triggerBoxCollapse : undefined);
     });
   }
   function openStage(zone, value) {
@@ -918,7 +1021,10 @@
       persist('three_gates_normal_goal', 'yes');
     }
     document.getElementById('message' + zone).textContent = '';
-    document.getElementById('code' + zone).value = '';
+    // Preserve OPEN in section 3 so the player can retry after collapse.
+    if (!(zone === '3' && stage.game === 'slider')) {
+      document.getElementById('code' + zone).value = '';
+    }
     if (stage.type === 'minigame') showMiniGame(stage);
     else if (stage.type === 'puzzle') showPuzzle(stage);
     else showText(stage);
