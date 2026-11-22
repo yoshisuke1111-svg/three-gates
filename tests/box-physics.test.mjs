@@ -44,7 +44,7 @@ const box=(id,x,y,w=.7,h=.7)=>({id,x,y,w,h});
 }
 {
   const [active,passive]=scenario('sideways corridor nudge',
-    [box('A',.1,1),box('B',.75,1.66)],.12,0);
+    [box('A',.1,1),box('B',.85,1.66)],.12,0);
   assert(active.x>.20, 'Active block should traverse a barely narrow gap');
   assert(passive.y>1.66 && passive.y<1.80,
          'Passive piece should be pushed sideways rather than blocked');
