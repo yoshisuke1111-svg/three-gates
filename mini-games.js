@@ -65,7 +65,7 @@
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
       '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。ほんの少しの引っかかりなら周りの駒が押し出される。離す瞬間には位置が飛ばない。行き詰まったら「一手戻す」でやり直せる。</p>'+
-      '<div class="mg-secret-hp" id="mg-slide-hp" hidden aria-live="polite"><span class="mg-secret-hp-label">HP</span><span class="mg-secret-hp-track" aria-hidden="true"><span class="mg-secret-hp-fill"></span></span></div>'+
+      '<div class="mg-secret-hp" id="mg-slide-hp" hidden aria-live="polite"><span class="mg-secret-hp-label">HP</span><div class="mg-secret-hp-content"><div class="mg-secret-hp-stats" id="mg-slide-hp-stats"></div><span class="mg-secret-hp-track" aria-hidden="true"><span class="mg-secret-hp-fill"></span></span></div></div>'+
       '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">このステージをやり直す</button></div>'+
       '<p class="mg-note" id="mg-slide-note" aria-live="polite"></p></div></div>'+
       '<div id="mg-slide-next" aria-live="polite"></div>';
@@ -73,11 +73,26 @@
     var note=root.querySelector("#mg-slide-note");
     var next=root.querySelector("#mg-slide-next");
     var hpPanel=root.querySelector("#mg-slide-hp");
+    var hpStats=root.querySelector("#mg-slide-hp-stats");
+    var MAX_HP_BY_NUMBER={"1":100,"2":200,"3":200,"5":300};
+    function hpFor(number) {
+      return MAX_HP_BY_NUMBER[number] || 0;
+    }
+    function updateHpStats() {
+      if(!hpStats || hiddenTapCount<HP_TAPS)return;
+      var types=Array.from(new Set(pieces.map(function(p){return p.n;})))
+        .sort(function(a,b){return Number(a)-Number(b);});
+      hpStats.textContent=types.map(function(n){
+        return n+" : "+hpFor(n);
+      }).join("   /   ");
+    }
     function revealHiddenHp() {
       if(!hpPanel || !hpPanel.hidden)return;
       hpPanel.hidden=false;
       hpPanel.classList.add("is-visible");
-      note.textContent="……箱の内側に、見慣れない表示が現れた。";
+      updateHpStats();
+      draw(); // Reveal a small HP label on each existing piece, too.
+      note.textContent="……箱の内側に、駒ごとのHPが現れた。";
     }
     function registerHiddenTap() {
       if(hiddenTapCount>=HP_TAPS)return;
@@ -87,7 +102,8 @@
 
     function freshItems(index) {
       return levels[index].items.map(function (p) {
-        return {id:p[0],n:p[0].charAt(0),x:p[1]+INSET,y:p[2]+INSET,w:p[3]-2*INSET,h:p[4]-2*INSET};
+        var type=p[0].charAt(0), maxHp=hpFor(type);
+        return {id:p[0],n:type,x:p[1]+INSET,y:p[2]+INSET,w:p[3]-2*INSET,h:p[4]-2*INSET,hp:maxHp,maxHp:maxHp};
       });
     }
     function snapshot() {
@@ -113,10 +129,14 @@
         if(!btn){
           btn=document.createElement("button");
           btn.type="button";btn.dataset.piece=p.id;
-          btn.innerHTML="<span>"+p.n+"</span>";
-          btn.setAttribute("aria-label","駒"+p.n+"を自由にドラッグして動かす");
+          btn.innerHTML='<span>'+p.n+'</span><small class="mg-piece-hp" hidden></small>';
           board.appendChild(btn);
         }
+        var exposed=hiddenTapCount>=HP_TAPS;
+        var hpLabel=btn.querySelector(".mg-piece-hp");
+        hpLabel.hidden=!exposed;
+        hpLabel.textContent="HP "+p.hp;
+        btn.setAttribute("aria-label","駒"+p.n+(exposed?"、HP "+p.hp+" / "+p.maxHp:"")+"を自由にドラッグして動かす");
         btn.className="mg-piece mg-piece-"+p.n+" mg-piece-movable"+
           (drag && drag.id===p.id?" is-dragging":"");
         btn.style.left=(p.x/W*100)+"%";
@@ -125,6 +145,7 @@
         btn.style.height=(p.h/H*100)+"%";
       });
       root.querySelector("#mg-slide-counter").textContent="MOVES "+String(moves).padStart(3,"0");
+      updateHpStats();
     }
     function showPiece(p) {
       var btn=board.querySelector('[data-piece="'+p.id+'"]');
