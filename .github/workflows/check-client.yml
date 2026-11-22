@@ -22,9 +22,14 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=08') || !html.includes('mini-games.css?v=08')) throw new Error('Missing minigame assets');
+          if (!html.includes('mini-games.js?v=09') || !html.includes('mini-games.css?v=09')) throw new Error('Missing minigame assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
-          console.log('Syntax and asset checks passed');
+          const games = fs.readFileSync('mini-games.js', 'utf8');
+          for (const expected of ['function moveFree(piece,dx,dy)', 'function shiftAxis(piece,axis,delta)', 'function endDrag(e,cancelled)']) {
+            if (!games.includes(expected)) throw new Error('Missing continuous-drag feature: '+expected);
+          }
+          if (games.includes('Math.round(distance/cell)')) throw new Error('Old grid snapping still present');
+          console.log('Syntax, assets and free-form movement checks passed');
           NODE
