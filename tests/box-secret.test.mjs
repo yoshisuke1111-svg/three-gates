@@ -68,6 +68,6 @@ assert(source.includes('hpLabel.hidden=!exposed'),'Other badges must be hidden')
 assert(source.includes('if(travel<9 && (!drag || !drag.active)'),
        'A drag must not be interpreted as a damage tap');
 const html=fs.readFileSync('index.html','utf8');
-assert(html.includes('mini-games.js?v=18')&&html.includes('mini-games.css?v=18'),
+assert(html.includes('mini-games.js?v=19')&&html.includes('mini-games.css?v=19'),
        'The release must load fresh v0.18 assets');
 console.log('Hidden taps, repairs at 10/20/30 and one-piece HP visibility verified.');
