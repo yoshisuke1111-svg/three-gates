@@ -56,8 +56,8 @@
     // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
-    var hiddenTapCount=0, hiddenTap=null, HP_TAPS=30, focusedHpId=null;
-    var instantFiveBreak=!!(options && options.instantFiveBreak);
+    var repeatFiveBreak=!!(options && options.instantFiveBreak);
+    var hiddenTapCount=0, hiddenTap=null, HP_TAPS=repeatFiveBreak?10:30, focusedHpId=null;
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
@@ -103,8 +103,9 @@
     function registerHiddenTap(pieceId) {
       if(hiddenTapCount>=HP_TAPS)return;
       // The hidden taps have one point of damage, but a mysterious repair
-      // restores every block after taps 10, 20 and 30. No tile can be
-      // unknowingly destroyed before the HP mechanic is revealed.
+      // restores all blocks at 10/20/30 on a first run; on a repeat run
+      // only the 10th tap is needed, and the damaged five stays at HP 1.
+      // No tile can be destroyed before the HP mechanic is revealed.
       var piece=pieces.find(function(p){return p.id===pieceId;});
       if(piece){
         focusedHpId=piece.id;
@@ -114,7 +115,9 @@
       }
       hiddenTapCount++;
       if(hiddenTapCount%10===0){
-        pieces.forEach(function(p){p.hp=p.maxHp;});
+        pieces.forEach(function(p){
+          if(!(repeatFiveBreak && p.id==="5"))p.hp=p.maxHp;
+        });
         board.classList.remove("mg-repair-pulse");
         void board.offsetWidth;
         board.classList.add("mg-repair-pulse");
@@ -132,7 +135,8 @@
     function freshItems(index) {
       return levels[index].items.map(function (p) {
         var type=p[0].charAt(0), maxHp=hpFor(type);
-        return {id:p[0],n:type,x:p[1]+INSET,y:p[2]+INSET,w:p[3]-2*INSET,h:p[4]-2*INSET,hp:maxHp,maxHp:maxHp};
+        return {id:p[0],n:type,x:p[1]+INSET,y:p[2]+INSET,w:p[3]-2*INSET,h:p[4]-2*INSET,
+          hp:(repeatFiveBreak && p[0]==="5")?1:maxHp,maxHp:maxHp};
       });
     }
     function snapshot() {
@@ -146,12 +150,12 @@
         if(past){p.x=past.x;p.y=past.y;}
       });
     }
-    function damagePiece(id, instant) {
-      if((hiddenTapCount<HP_TAPS && !instant) || stageComplete || finished)return;
+    function damagePiece(id) {
+      if(hiddenTapCount<HP_TAPS || stageComplete || finished)return;
       var piece=pieces.find(function(p){return p.id===id;});
       if(!piece || piece.hp<=0)return;
       focusedHpId=id;
-      piece.hp=instant && id==="5" ? 0 : Math.max(0,piece.hp-1);
+      piece.hp=Math.max(0,piece.hp-1);
       if(piece.hp>0){draw();return;}
       if(piece.id==="5"){
         stageComplete=true;
@@ -170,11 +174,6 @@
     }
     function handleBoardTap(pieceId) {
       if(stageComplete || finished)return;
-      // Once the five has been destroyed, the next attempt is a trap:
-      // one direct tap shatters it, even before the HP display is unlocked.
-      if(pieceId==="5" && instantFiveBreak){
-        damagePiece("5",true);return;
-      }
       if(hiddenTapCount<HP_TAPS){
         registerHiddenTap(pieceId);
         return; // Hidden damage is periodically repaired before the reveal.
