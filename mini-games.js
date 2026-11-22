@@ -56,6 +56,7 @@
     // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
+    var hiddenTapCount=0, hiddenTap=null, HP_TAPS=30;
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
@@ -64,12 +65,25 @@
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
       '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。ほんの少しの引っかかりなら周りの駒が押し出される。離す瞬間には位置が飛ばない。行き詰まったら「一手戻す」でやり直せる。</p>'+
+      '<div class="mg-secret-hp" id="mg-slide-hp" hidden aria-live="polite"><span class="mg-secret-hp-label">HP</span><span class="mg-secret-hp-track" aria-hidden="true"><span class="mg-secret-hp-fill"></span></span></div>'+
       '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">このステージをやり直す</button></div>'+
       '<p class="mg-note" id="mg-slide-note" aria-live="polite"></p></div></div>'+
       '<div id="mg-slide-next" aria-live="polite"></div>';
     var board=root.querySelector("#mg-slide-board");
     var note=root.querySelector("#mg-slide-note");
     var next=root.querySelector("#mg-slide-next");
+    var hpPanel=root.querySelector("#mg-slide-hp");
+    function revealHiddenHp() {
+      if(!hpPanel || !hpPanel.hidden)return;
+      hpPanel.hidden=false;
+      hpPanel.classList.add("is-visible");
+      note.textContent="……箱の内側に、見慣れない表示が現れた。";
+    }
+    function registerHiddenTap() {
+      if(hiddenTapCount>=HP_TAPS)return;
+      hiddenTapCount++;
+      if(hiddenTapCount===HP_TAPS)revealHiddenHp();
+    }
 
     function freshItems(index) {
       return levels[index].items.map(function (p) {
@@ -80,6 +94,7 @@
       return pieces.map(function(p){return Object.assign({},p);});
     }
     function load(index) {
+      hiddenTap=null;
       levelIndex=index;
       pieces=freshItems(index);
       history=[];moves=0;lastPiece="5";stageComplete=false;drag=null;
@@ -234,6 +249,9 @@
       if(last){finished=true;win();}
     }
     function onClick(e) {
+      // Keyboard/assistive clicks have detail 0; physical clicks are already
+      // counted on pointerup to prevent double-counting.
+      if(e.detail===0 && e.target.closest("#mg-slide-board"))registerHiddenTap();
       var act=e.target.closest("[data-act]");
       if(!act)return; // Tapping a piece never makes it jump.
       if(act.dataset.act==="next" && stageComplete && !finished){
@@ -249,6 +267,11 @@
     }
     function onDown(e) {
       if(drag || stageComplete || finished || (e.pointerType==="mouse" && e.button!==0))return;
+      // Track a short click on either a piece or the empty board, but never
+      // interpret a drag as repeated taps.
+      if(e.target.closest("#mg-slide-board")){
+        hiddenTap={pointerId:e.pointerId,x:e.clientX,y:e.clientY};
+      }
       var btn=e.target.closest("[data-piece]");
       if(!btn)return;
       var piece=pieces.find(function(p){return p.id===btn.dataset.piece;});
@@ -311,9 +334,20 @@
       draw();
       checkWin(current.piece);
     }
-    function onUp(e){endDrag(e,false);}
-    function onCancel(e){endDrag(e,true);}
+    function onUp(e){
+      if(hiddenTap && hiddenTap.pointerId===e.pointerId){
+        var travel=Math.hypot(e.clientX-hiddenTap.x,e.clientY-hiddenTap.y);
+        if(travel<9 && !stageComplete && !finished)registerHiddenTap();
+        hiddenTap=null;
+      }
+      endDrag(e,false);
+    }
+    function onCancel(e){
+      if(hiddenTap && hiddenTap.pointerId===e.pointerId)hiddenTap=null;
+      endDrag(e,true);
+    }
     function onLostCapture(e){
+      if(hiddenTap && hiddenTap.pointerId===e.pointerId)hiddenTap=null;
       if(drag && drag.pointerId===e.pointerId)endDrag(e,true);
     }
     function onKey(e) {
