@@ -146,26 +146,42 @@
       drag=null;
       var el=current.pieceElement;
       el.classList.remove("is-dragging");
-      el.style.transform="";
       if(el.hasPointerCapture && el.hasPointerCapture(current.pointerId)){
         try{el.releasePointerCapture(current.pointerId);}catch(ignore){}
       }
-      if(cancelled || !current.axis || stageComplete || finished){draw();return;}
+      if(cancelled || !current.axis || stageComplete || finished){
+        el.style.transform="";
+        draw();
+        return;
+      }
       var distance=Math.abs(current.preview);
       var cell=current.axis==="x"?current.cellX:current.cellY;
       var amount=Math.round(distance/cell);
-      if(amount===0){draw();return;}
       var piece=current.piece, dir=current.direction;
-      var legal=maxSteps(piece,dir);
-      amount=Math.min(amount,legal);
-      if(amount===0){draw();return;}
+      amount=Math.min(amount,maxSteps(piece,dir));
+      if(amount===0){
+        el.style.transform=""; // return gently to origin, but never move on a tap
+        draw();
+        return;
+      }
       history.push(pieces.map(function(o){return Object.assign({},o);}));
       piece.x+=vector[dir][0]*amount;
       piece.y+=vector[dir][1]*amount;
       moves++;
       lastPiece=piece.id;
       note.textContent="指を離した位置で駒が止まった。";
+      // Change the grid position without flashing back to the start.
+      // Preserve the finger position as a residual transform, then ease into the cell.
+      var remainder=current.preview-Math.sign(current.preview)*amount*cell;
+      el.style.transition="none";
       draw();
+      el.style.transform=current.axis==="x"?
+        "translate3d("+remainder+"px,0,0)":"translate3d(0,"+remainder+"px,0)";
+      el.getBoundingClientRect(); // flush the release position before enabling easing
+      el.style.transition="";
+      requestAnimationFrame(function(){
+        if(el.isConnected && !el.classList.contains("is-dragging"))el.style.transform="";
+      });
       if(piece.id==="5" && piece.x===1 && piece.y===3)clearLevel();
     }
     function step(id,dir) {
