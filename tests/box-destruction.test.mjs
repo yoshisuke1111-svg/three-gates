@@ -73,9 +73,14 @@ const index=fs.readFileSync('index.html','utf8');
 assert(index.includes('function triggerBoxCollapse()'),'Global collapse must be wired');
 assert(index.includes("stage.game === 'slider' ? triggerBoxCollapse : undefined"),
        'The slider must supply a failure callback');
-assert(index.includes("site.classList.add('tg-falling')"),'Top-to-bottom falling must be animated');
-assert(index.includes('sceneView.inert = true'),'Inputs must be frozen during collapse');
-assert(index.includes('reduceMotion ? 800 : 4300'),'Reduced-motion option must be honored');
+const collapse=fs.readFileSync('collapse.js','utf8');
+assert(index.includes('window.ThreeGatesCollapse?.run('),'The index must call the collapse engine');
+assert(collapse.includes('function buildFragments(site)'),'Individual fragments must be created');
+assert(collapse.includes('var shard=el.cloneNode(!isFrame)'),'Empty frames and separate children required');
+assert(collapse.includes('"#mg-slide-board .mg-piece"'),'Individual blocks must fall');
+assert(collapse.includes('site.classList.add("tg-falling")'),'Fragments must replace original layout');
+assert(collapse.includes('scene.inert=true'),'Inputs must be frozen during collapse');
+assert(collapse.includes('reduce?760:4900'),'Reduced-motion option must be honored');
 assert(index.includes("!(zone === '3' && stage.game === 'slider')"),
        'The OPEN code should be kept for quick retry after returning home');
 const css=fs.readFileSync('mini-games.css','utf8');
