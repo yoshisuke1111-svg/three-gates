@@ -70,3 +70,22 @@
   .mg-board-area{flex:0 1 min(100%,350px)}
   #mg-slide-next [data-act="next"]{width:100%}
 }
+
+/* Direct-manipulation slider: no movement from a mere tap. */
+#mg-slide-board .mg-piece{
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+  transition:transform .14s ease-out, border-color .16s;
+  will-change:transform;
+}
+#mg-slide-board .mg-piece.is-dragging{
+  z-index:8;
+  cursor:grabbing;
+  transition:none !important;
+  filter:brightness(1.11);
+  box-shadow:inset 0 0 0 2px #fff0ce6b,0 8px 20px #000a,0 0 0 2px #ddbd8a6b;
+}
+#mg-slide-board .mg-piece-movable{cursor:grab}
+#mg-slide-board .mg-piece-blocked{cursor:default}
