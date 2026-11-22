@@ -43,15 +43,15 @@
       ]}
     ];
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
-    var stageComplete=false, finished=false, touch=null, suppressClick=false;
+    var stageComplete=false, finished=false, drag=null;
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
-      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口へ。<b>動かしたい駒をタップ</b>すると空いた方向へ動く。</p>'+
+      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口へ。<b>駒を指で引っ張って</b>通り道を作ろう。</p>'+
       '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="5を出口まで移動する数字の箱"></div>'+
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
-      '<p class="mg-help">タップだけで移動。複数方向に動けるときは、<b>動かしたい側の端</b>をタップ。スワイプやドラッグでも移動できる。</p>'+
+      '<p class="mg-help">駒を押さえたまま指を動かし、<b>離した場所で止める</b>。途中で壁や別の駒に当たると、それ以上は進まない。タップだけでは動かない。</p>'+
       '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">このステージをやり直す</button></div>'+
       '<p class="mg-note" id="mg-slide-note" aria-live="polite"></p></div></div>'+
       '<div id="mg-slide-next" aria-live="polite"></div>';
@@ -67,14 +67,14 @@
       levelIndex=index;
       pieces=freshItems(levelIndex);
       history=[];moves=0;lastPiece="5";stageComplete=false;
-      touch=null;suppressClick=false;
+      drag=null;
       board.classList.remove("mg-cleared");
       board.replaceChildren();
       next.replaceChildren();
       root.querySelector("#mg-slide-stage").textContent="STAGE "+(levelIndex+1)+" / "+levels.length;
       root.querySelector("#mg-slide-types").textContent=levels[levelIndex].label;
       root.querySelector("#mg-slide-title").textContent=levels[levelIndex].title;
-      note.textContent="駒を直接タップして動かそう。";
+      note.textContent="駒を押さえて、指で引っ張ろう。";
       draw();
     }
     function isLegal(piece,dir) {
@@ -98,28 +98,75 @@
           board.appendChild(btn);
         }
         var movable=legalDirs(p).length>0;
-        btn.className="mg-piece mg-piece-"+p.n+(movable?" mg-piece-movable":" mg-piece-blocked");
-        btn.setAttribute("aria-label","駒"+p.n+(movable?"、タップして移動":"、現在動かせない"));
+        btn.className="mg-piece mg-piece-"+p.n+(movable?" mg-piece-movable":" mg-piece-blocked")+
+          (drag && drag.id===p.id?" is-dragging":"");
+        btn.setAttribute("aria-label","駒"+p.n+(movable?"、ドラッグして移動":"、現在動かせない"));
         btn.style.left=(p.x*25)+"%";btn.style.top=(p.y*20)+"%";
+        if(!drag || drag.id!==p.id)btn.style.transform="";
+
         btn.style.width=(p.w*25)+"%";btn.style.height=(p.h*20)+"%";
       });
       root.querySelector("#mg-slide-counter").textContent="MOVES "+String(moves).padStart(3,"0");
     }
-    function chooseDirection(piece,coords) {
-      var dirs=legalDirs(piece);
-      if(dirs.length===0)return null;
-      if(dirs.length===1)return dirs[0];
-      var el=board.querySelector('[data-piece="'+piece.id+'"]');
-      if(!el)return dirs[0];
-      var rect=el.getBoundingClientRect();
-      var x=.5,y=.5;
-      if(coords && Number.isFinite(coords.x) && Number.isFinite(coords.y)){
-        x=Math.min(1,Math.max(0,(coords.x-rect.left)/Math.max(1,rect.width)));
-        y=Math.min(1,Math.max(0,(coords.y-rect.top)/Math.max(1,rect.height)));
+    function maxSteps(piece, dir) {
+      // Look ahead one cell at a time: the preview may never pass through a piece.
+      var test={id:piece.id,x:piece.x,y:piece.y,w:piece.w,h:piece.h};
+      var count=0;
+      while(count<5 && isLegal(test,dir)) {
+        test.x+=vector[dir][0];
+        test.y+=vector[dir][1];
+        count++;
       }
-      var dists={left:x,right:1-x,up:y,down:1-y};
-      dirs.sort(function(a,b){return dists[a]-dists[b];});
-      return dirs[0];
+      return count;
+    }
+    function dragPosition(event) {
+      if(!drag || event.pointerId!==drag.pointerId)return;
+      var dx=event.clientX-drag.startX;
+      var dy=event.clientY-drag.startY;
+      if(!drag.axis) {
+        if(Math.max(Math.abs(dx),Math.abs(dy))<5)return;
+        drag.axis=Math.abs(dx/drag.cellX)>=Math.abs(dy/drag.cellY)?"x":"y";
+      }
+      var horizontal=drag.axis==="x";
+      var raw=horizontal?dx:dy;
+      var dir=horizontal?(raw<0?"left":"right"):(raw<0?"up":"down");
+      var cell=horizontal?drag.cellX:drag.cellY;
+      var capacity=maxSteps(drag.piece,dir)*cell;
+      // The tile stays under the finger until a wall or another tile blocks it.
+      var preview=Math.sign(raw)*Math.min(Math.abs(raw),capacity);
+      drag.preview=preview;
+      drag.direction=dir;
+      drag.pieceElement.style.transform=horizontal?
+        "translate3d("+preview+"px,0,0)":"translate3d(0,"+preview+"px,0)";
+    }
+    function endDrag(event,cancelled) {
+      if(!drag || event.pointerId!==drag.pointerId)return;
+      if(!cancelled)dragPosition(event);
+      var current=drag;
+      drag=null;
+      var el=current.pieceElement;
+      el.classList.remove("is-dragging");
+      el.style.transform="";
+      if(el.hasPointerCapture && el.hasPointerCapture(current.pointerId)){
+        try{el.releasePointerCapture(current.pointerId);}catch(ignore){}
+      }
+      if(cancelled || !current.axis || stageComplete || finished){draw();return;}
+      var distance=Math.abs(current.preview);
+      var cell=current.axis==="x"?current.cellX:current.cellY;
+      var amount=Math.round(distance/cell);
+      if(amount===0){draw();return;}
+      var piece=current.piece, dir=current.direction;
+      var legal=maxSteps(piece,dir);
+      amount=Math.min(amount,legal);
+      if(amount===0){draw();return;}
+      history.push(pieces.map(function(o){return Object.assign({},o);}));
+      piece.x+=vector[dir][0]*amount;
+      piece.y+=vector[dir][1]*amount;
+      moves++;
+      lastPiece=piece.id;
+      note.textContent="指を離した位置で駒が止まった。";
+      draw();
+      if(piece.id==="5" && piece.x===1 && piece.y===3)clearLevel();
     }
     function step(id,dir) {
       if(stageComplete||finished)return;
@@ -151,38 +198,44 @@
     }
     function onClick(e){
       var act=e.target.closest("[data-act]");
-      if(act){
-        if(act.dataset.act==="next" && stageComplete && !finished){load(levelIndex+1);return;}
-        if(act.dataset.act==="reset" && !finished){load(levelIndex);return;}
-        if(act.dataset.act==="undo" && history.length && !stageComplete && !finished){
-          pieces=history.pop();moves=Math.max(0,moves-1);note.textContent="一手前に戻した。";draw();return;
-        }
-        return;
+      if(!act)return; // Tapping a piece NEVER moves it.
+      if(act.dataset.act==="next" && stageComplete && !finished){load(levelIndex+1);return;}
+      if(act.dataset.act==="reset" && !finished){load(levelIndex);return;}
+      if(act.dataset.act==="undo" && history.length && !stageComplete && !finished){
+        pieces=history.pop();moves=Math.max(0,moves-1);
+        note.textContent="一手前に戻した。";draw();
       }
-      var button=e.target.closest("[data-piece]");
-      if(!button)return;
-      if(suppressClick){suppressClick=false;return;}
-      if(stageComplete||finished)return;
-      var id=button.dataset.piece,p=pieces.find(function(o){return o.id===id;});
-      var dir=chooseDirection(p,{x:e.clientX,y:e.clientY});
-      if(!dir){note.textContent="その駒はまだ動かせない。";return;}
-      step(id,dir);
     }
     function onDown(e){
-      var p=e.target.closest("[data-piece]");
-      suppressClick=false;
-      touch=p?{id:p.dataset.piece,x:e.clientX,y:e.clientY}:null;
+      if(drag || stageComplete || finished || (e.pointerType==="mouse" && e.button!==0))return;
+      var btn=e.target.closest("[data-piece]");
+      if(!btn)return;
+      var p=pieces.find(function(o){return o.id===btn.dataset.piece;});
+      if(!p || legalDirs(p).length===0)return;
+      var cellX=board.clientWidth/4,cellY=board.clientHeight/5;
+      if(cellX<=0||cellY<=0)return;
+      drag={
+        id:p.id,piece:p,pieceElement:btn,pointerId:e.pointerId,
+        startX:e.clientX,startY:e.clientY,cellX:cellX,cellY:cellY,
+        axis:null,direction:null,preview:0
+      };
+      btn.classList.add("is-dragging");
+      if(btn.setPointerCapture) {
+        try{btn.setPointerCapture(e.pointerId);}catch(ignore){}
+      }
+      e.preventDefault();
     }
-    function onUp(e){
-      if(!touch)return;
-      var dx=e.clientX-touch.x,dy=e.clientY-touch.y,id=touch.id;
-      touch=null;
-      if(Math.max(Math.abs(dx),Math.abs(dy))<23)return;
-      suppressClick=true;
-      var dir=Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up");
-      step(id,dir);
+    function onMove(e){
+      if(drag && e.pointerId===drag.pointerId) {
+        dragPosition(e);
+        e.preventDefault();
+      }
     }
-    function onCancel(){touch=null;}
+    function onUp(e){endDrag(e,false);}
+    function onCancel(e){endDrag(e,true);}
+    function onLostCapture(e){
+      if(drag && e.pointerId===drag.pointerId)endDrag(e,true);
+    }
     function onKey(e) {
       if(!root.isConnected||stageComplete||finished)return;
       var d=keyDirection(e);
@@ -194,15 +247,24 @@
     }
     root.addEventListener("click",onClick);
     root.addEventListener("pointerdown",onDown);
+    root.addEventListener("pointermove",onMove);
     root.addEventListener("pointerup",onUp);
     root.addEventListener("pointercancel",onCancel);
+    root.addEventListener("lostpointercapture",onLostCapture);
     document.addEventListener("keydown",onKey);
     load(0);
     return function () {
+      if(drag){
+        drag.pieceElement.style.transform="";
+        drag.pieceElement.classList.remove("is-dragging");
+        drag=null;
+      }
       root.removeEventListener("click",onClick);
       root.removeEventListener("pointerdown",onDown);
+      root.removeEventListener("pointermove",onMove);
       root.removeEventListener("pointerup",onUp);
       root.removeEventListener("pointercancel",onCancel);
+      root.removeEventListener("lostpointercapture",onLostCapture);
       document.removeEventListener("keydown",onKey);
     };
   }
