@@ -56,7 +56,7 @@
     // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
-    var hiddenTapCount=0, hiddenTap=null, HP_TAPS=30, focusedHpId="5";
+    var hiddenTapCount=0, hiddenTap=null, HP_TAPS=30, focusedHpId=null;
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
@@ -81,14 +81,14 @@
     }
     function updateHpStats() {
       if(!hpStats || hiddenTapCount<HP_TAPS)return;
-      var active=pieces.find(function(p){return p.id===focusedHpId;}) ||
-                 pieces.find(function(p){return p.id==="5";}) || pieces[0];
-      if(!active){hpStats.textContent="";return;}
-      focusedHpId=active.id;
-      var types=Array.from(new Set(pieces.map(function(p){return p.n;})))
-        .sort(function(a,b){return Number(a)-Number(b);});
-      hpStats.textContent="選択 "+active.n+" : "+active.hp+" / "+active.maxHp+
-        "  ·  "+types.map(function(n){return n+"="+hpFor(n);}).join(" / ");
+      // Do not reveal other tiles' HP: only the most recently tapped tile.
+      var active=pieces.find(function(p){return p.id===focusedHpId;});
+      if(!active){
+        hpStats.textContent="駒をタップすると表示";
+        if(hpBar)hpBar.style.width="0%";
+        return;
+      }
+      hpStats.textContent="駒 "+active.n+"  HP "+active.hp+" / "+active.maxHp;
       if(hpBar)hpBar.style.width=Math.max(0,100*active.hp/active.maxHp)+"%";
     }
     function revealHiddenHp() {
@@ -96,13 +96,36 @@
       hpPanel.hidden=false;
       hpPanel.classList.add("is-visible");
       updateHpStats();
-      draw(); // Reveal a small HP label on each existing piece, too.
-      note.textContent="……箱の内側に、駒ごとのHPが現れた。";
+      draw(); // Show the last tapped tile's HP and keep all others hidden.
+      note.textContent="……選んだ箱にだけ、HPの表示が現れた。";
     }
-    function registerHiddenTap() {
+    function registerHiddenTap(pieceId) {
       if(hiddenTapCount>=HP_TAPS)return;
+      // The hidden taps have one point of damage, but a mysterious repair
+      // restores every block after taps 10, 20 and 30. No tile can be
+      // unknowingly destroyed before the HP mechanic is revealed.
+      var piece=pieces.find(function(p){return p.id===pieceId;});
+      if(piece){
+        focusedHpId=piece.id;
+        piece.hp=Math.max(1,piece.hp-1);
+      }else{
+        focusedHpId=null;
+      }
       hiddenTapCount++;
-      if(hiddenTapCount===HP_TAPS)revealHiddenHp();
+      if(hiddenTapCount%10===0){
+        pieces.forEach(function(p){p.hp=p.maxHp;});
+        board.classList.remove("mg-repair-pulse");
+        void board.offsetWidth;
+        board.classList.add("mg-repair-pulse");
+        if(hiddenTapCount<HP_TAPS){
+          note.textContent="……箱の表面の傷が、いつの間にか消えている。";
+        }
+      }
+      if(hiddenTapCount===HP_TAPS){
+        revealHiddenHp();
+      }else{
+        draw();
+      }
     }
 
     function freshItems(index) {
@@ -140,20 +163,21 @@
         return;
       }
       pieces=pieces.filter(function(p){return p.id!==id;});
+      focusedHpId=null;
       note.textContent="駒 "+piece.n+" が壊れた。そこに空きが生まれた。";
       draw();
     }
     function handleBoardTap(pieceId) {
       if(stageComplete || finished)return;
       if(hiddenTapCount<HP_TAPS){
-        registerHiddenTap();
-        return; // Unlocking the HP display does not deal damage.
+        registerHiddenTap(pieceId);
+        return; // Hidden damage is periodically repaired before the reveal.
       }
       if(pieceId)damagePiece(pieceId);
     }
     function load(index) {
       hiddenTap=null;
-      focusedHpId="5";
+      focusedHpId=null;
       levelIndex=index;
       pieces=freshItems(index);
       history=[];moves=0;lastPiece="5";stageComplete=false;drag=null;
@@ -178,13 +202,14 @@
           btn.innerHTML='<span>'+p.n+'</span><small class="mg-piece-hp" hidden></small>';
           board.appendChild(btn);
         }
-        var exposed=hiddenTapCount>=HP_TAPS;
+        var exposed=hiddenTapCount>=HP_TAPS && focusedHpId===p.id;
         var hpLabel=btn.querySelector(".mg-piece-hp");
         hpLabel.hidden=!exposed;
-        hpLabel.textContent="HP "+p.hp;
+        hpLabel.textContent=exposed?"HP "+p.hp:"";
         btn.setAttribute("aria-label","駒"+p.n+(exposed?"、HP "+p.hp+" / "+p.maxHp:"")+"を自由にドラッグして動かす");
         btn.className="mg-piece mg-piece-"+p.n+" mg-piece-movable"+
-          (drag && drag.id===p.id?" is-dragging":"");
+          (drag && drag.id===p.id?" is-dragging":"")+
+          (hiddenTapCount<HP_TAPS && p.hp<p.maxHp?" mg-piece-faint-crack":"");
         btn.style.left=(p.x/W*100)+"%";
         btn.style.top=(p.y/H*100)+"%";
         btn.style.width=(p.w/W*100)+"%";
