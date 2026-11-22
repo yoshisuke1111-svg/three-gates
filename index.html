@@ -211,13 +211,13 @@
       *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
   </style>
-<link rel="stylesheet" href="./mini-games.css?v=07">
+<link rel="stylesheet" href="./mini-games.css?v=08">
 </head>
 <body>
 <div class="site">
   <header class="masthead">
     <div class="mark">UNNAMED / THREE</div>
-    <span class="version">PROTOTYPE 0.7<br>WEB BUILD</span>
+    <span class="version">PROTOTYPE 0.8<br>WEB BUILD</span>
   </header>
 
   <main id="homeView">
@@ -293,7 +293,7 @@
   <footer class="footer"><span>© 鈾 / ORIGINAL PUZZLE PROJECT</span><span>STATUS: IN DEVELOPMENT</span></footer>
 </div>
 <div class="blackout" id="blackout" aria-hidden="true"></div>
-<script src="./mini-games.js?v=07"></script>
+<script src="./mini-games.js?v=08"></script>
 <script>
 (() => {
   'use strict';
@@ -894,7 +894,7 @@
         }
         document.getElementById('miniGameReward').innerHTML =
           '<div class="mg-win appear">' +
-          '<p class="mg-win-label">STAGE CLEAR / 01 OF 01</p>' +
+          '<p class="mg-win-label">' + (stage.game === 'slider' ? 'STAGE CLEAR / 03 OF 03' : 'STAGE CLEAR / 01 OF 01') + '</p>' +
           '<h3>仕掛けが解除された。</h3>' +
           '<p>' + escapeHtml(reward.text) + '</p>' +
           '<p class="small">' + (reward.finalCode ? '最下段の FINAL CODE に入力' : '区画 ' + reward.zone + ' に入力するコード') + '</p>' +
