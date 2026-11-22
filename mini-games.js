@@ -44,15 +44,15 @@
     ];
     // Coordinates are continuous board units, not discrete grid cells.
     // The original arrangement remains 4 x 5, but pieces can end at any position.
-    var W=4,H=5, EPS=0.000001, INSET=0.15, PUSH_LIMIT=0.17, NUDGE=0.006;
-    // Every side of every block has a real, visible clearance: 0.30 board units
+    var W=4,H=5, EPS=0.000001, INSET=0.06, PUSH_LIMIT=0.17, NUDGE=0.006;
+    // Every side of every block has a small, visible clearance: 0.12 board units
     // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
-      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口まで運べ。駒を<b>好きな方向へ自由に引っ張ろう</b>。駒の周囲に動かせる余白を設けてある。</p>'+
+      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口まで運べ。駒を<b>好きな方向へ自由に引っ張ろう</b>。駒は見やすい大きさのまま、周囲の小さな隙間と押しのけ機能で動かせる。</p>'+
       '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="仕切りのない箱。駒は自由な位置に動かせる"></div>'+
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
