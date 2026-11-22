@@ -12,6 +12,7 @@ on:
       - 'tests/box-secret.test.mjs'
       - 'tests/box-destruction.test.mjs'
       - 'tests/box-collapse.test.mjs'
+      - 'tests/box-persistence.test.mjs'
       - '.github/workflows/check-client.yml'
   workflow_dispatch:
 jobs:
@@ -30,8 +31,8 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=20') || !html.includes('mini-games.css?v=20')) throw new Error('Missing minigame assets');
-          if (!html.includes('collapse.js?v=20') || !html.includes('collapse.css?v=20')) throw new Error('Missing separate collapse assets');
+          if (!html.includes('mini-games.js?v=21') || !html.includes('mini-games.css?v=21')) throw new Error('Missing minigame assets');
+          if (!html.includes('collapse.js?v=21') || !html.includes('collapse.css?v=21')) throw new Error('Missing separate collapse assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
@@ -61,3 +62,5 @@ jobs:
         run: node tests/box-destruction.test.mjs
       - name: Verify individual pieces fall and corrupted screen cleanup
         run: node tests/box-collapse.test.mjs
+      - name: Verify destruction memory survives storage failures and reloads
+        run: node tests/box-persistence.test.mjs
