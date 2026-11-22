@@ -1,4 +1,4 @@
-// Damage is one HP per short tap, and only after the 30-tap reveal.
+// Damage is one HP per short tap. First attempt reveals at 30 taps; repeat at 10.
 // Removed tiles stay gone; destroying the five invokes the catastrophe exactly once.
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -69,30 +69,80 @@ assert.equal(outcomes.destroyedAfterExtraTaps,1,'Further taps must not start a s
 assert.equal(outcomes.finalHp,0);
 assert.equal(outcomes.unlocked,1);
 
-// After a five was previously destroyed, the next attempt must
-// shatter it with ONE direct tap, even without revealing the HP counter.
+// A prior five destruction lowers the new five to HP 1, but it must survive
+// the ten preparatory taps and be breakable only after the HP display unlocks.
+const hiddenBegin=src.indexOf('    function registerHiddenTap(pieceId) {');
+const hiddenEnd=src.indexOf('    function freshItems(index) {',hiddenBegin);
+assert(hiddenBegin>0&&hiddenEnd>hiddenBegin,'Hidden tap code missing');
+const hiddenCode=src.slice(hiddenBegin,hiddenEnd);
 const repeat=vm.runInNewContext([
-  'var hiddenTapCount=0,HP_TAPS=30,focusedHpId=null,instantFiveBreak=true;',
-  'var stageComplete=false,finished=false,triggered=0,draws=0;',
-  'var pieces=[{id:"5",n:"5",hp:300,maxHp:300,x:1,y:0}];',
+  'var hiddenTapCount=0,HP_TAPS=10,repeatFiveBreak=true,focusedHpId=null;',
+  'var stageComplete=false,finished=false,triggered=0,draws=0,reveals=0;',
+  'var pieces=[{id:"5",n:"5",hp:1,maxHp:300,x:1,y:0},',
+  '            {id:"1a",n:"1",hp:100,maxHp:100,x:0,y:0}];',
   'var note={textContent:""};',
-  'var board={querySelector:function(){return {classList:{add:function(){}}};}};',
+  'var board={offsetWidth:320,classList:{remove:function(){},add:function(){}},',
+  '   querySelector:function(){return {classList:{add:function(){}}};}};',
   'function onDestroyed(){triggered++;}',
   'function draw(){draws++;}',
-  'function registerHiddenTap(){throw Error("Repeat kill should bypass HP unlock");}',
+  'function revealHiddenHp(){reveals++;}',
+  hiddenCode,
   code,
+  'for(let i=0;i<9;i++)handleBoardTap("5");',
+  'var atNine={count:hiddenTapCount,hp:pieces[0].hp,triggered:triggered};',
   'handleBoardTap("5");',
-  'var first={hp:pieces[0].hp,finished:finished,triggered:triggered};',
+  'var atTen={count:hiddenTapCount,hp:pieces[0].hp,triggered:triggered,reveals:reveals};',
   'handleBoardTap("5");',
-  '({first:first,secondTriggered:triggered});'
+  'var onEleven={hp:pieces[0].hp,finished:finished,triggered:triggered};',
+  'handleBoardTap("5");',
+  '({atNine:atNine,atTen:atTen,onEleven:onEleven,triggeredAfter:triggered});'
 ].join('\n'));
-assert.equal(repeat.first.hp,0,'The five should drop from 300 to zero in one tap');
-assert.equal(repeat.first.finished,true);
-assert.equal(repeat.first.triggered,1);
-assert.equal(repeat.secondTriggered,1,'Repeat taps must not trigger again');
+assert.deepEqual({...repeat.atNine},{count:9,hp:1,triggered:0});
+assert.deepEqual({...repeat.atTen},{count:10,hp:1,triggered:0,reveals:1},
+  'Tenth tap must display HP 1, not destroy the five');
+assert.deepEqual({...repeat.onEleven},{hp:0,finished:true,triggered:1},
+  'Eleventh direct tap must trigger the second collapse');
+assert.equal(repeat.triggeredAfter,1,'More taps must not retrigger collapse');
+
+const freshBegin=src.indexOf('    function freshItems(index) {',hiddenEnd);
+const freshEnd=src.indexOf('    function snapshot() {',freshBegin);
+assert(freshBegin>0&&freshEnd>freshBegin);
+const fresh=vm.runInNewContext([
+  'var repeatFiveBreak=true,INSET=.01;',
+  'function hpFor(type){return {"1":100,"2":200,"3":200,"5":300}[type]||0;}',
+  'var levels=[{items:[["5",1,0,2,2],["1a",0,0,1,1]]}];',
+  src.slice(freshBegin,freshEnd),
+  'freshItems(0).map(p=>[p.id,p.hp,p.maxHp]);'
+].join('\n'));
+assert.deepEqual(Array.from(fresh,p=>Array.from(p)),[
+  ['5',1,300],['1a',100,100]
+], 'A fresh repeat stage must start with five at 1 of 300 HP');
 
 const index=fs.readFileSync('index.html','utf8');
 assert(index.includes('function triggerBoxCollapse()'),'Global collapse must be wired');
+// The old failure skipped the collapse callback while the entrance
+// transition had navigating=true, even though the board was already playable.
+const cbStart=index.indexOf('  function triggerBoxCollapse() {');
+const cbEnd=index.indexOf('  async function transition(render) {',cbStart);
+assert(cbStart>0&&cbEnd>cbStart,'Collapse callback extraction');
+const early=vm.runInNewContext([
+  'var navigating=true,sceneView={hidden:false},fiveWasDestroyed=false,reduceMotion=false;',
+  'var persisted=[],runs=[];',
+  'function persist(key,value){persisted.push([key,value]);}',
+  'function goHome(){}',
+  'var document={querySelector:function(){return {};}};',
+  'var window={ThreeGatesCollapse:{run:function(opts){runs.push(opts);}}};',
+  index.slice(cbStart,cbEnd),
+  'triggerBoxCollapse();',
+  '({runs:runs.length,remembered:fiveWasDestroyed,persisted:persisted});'
+].join('\n'));
+assert.equal(early.runs,1,
+  'Even during the entrance animation the second collapse must run');
+assert.equal(early.remembered,true);
+assert.deepEqual(Array.from(early.persisted,p=>Array.from(p)),
+  [['three_gates_five_destroyed','yes']]);
+
+
 assert(index.includes("fiveWasDestroyed = localStorage.getItem('three_gates_five_destroyed')"),'Past destruction must be restored');
 assert(index.includes("persist('three_gates_five_destroyed','yes')"),'First destruction must be persisted');
 assert(index.includes("{instantFiveBreak:fiveWasDestroyed}"),'Replay condition must reach puzzle engine');
