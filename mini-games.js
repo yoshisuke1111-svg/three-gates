@@ -44,7 +44,7 @@
     ];
     // Coordinates are continuous board units, not discrete grid cells.
     // The original arrangement remains 4 x 5, but pieces can end at any position.
-    var W=4,H=5, EPS=0.000001, INSET=0.06, PUSH_LIMIT=0.17, NUDGE=0.006;
+    var W=4,H=5, EPS=0.000001, INSET=0.06, PUSH_LIMIT=0.35, NUDGE=0.006;
     // Every side of every block has a small, visible clearance: 0.12 board units
     // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
