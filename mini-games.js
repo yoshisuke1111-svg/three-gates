@@ -577,11 +577,11 @@
   }
   function mirror(root,win) {
     var upper="001101", bits="100011".split(""),finished=false;
-    root.innerHTML='<p class="mg-instruction">上下で同じ桁に同じ数字は置けない。下側のスイッチを切り替えよ。</p>'+
+    root.innerHTML='<p class="mg-instruction">上下で同じ桁に同じ数字は置けません。下側のスイッチを切り替えて、すべての桁を反対にすればクリアです。</p>'+
       '<div class="mg-mirror-rows"><div class="mg-mirror-name">上の記録</div><div class="mg-mirror-row mg-fixed" id="mg-mirror-top"></div>'+
       '<div class="mg-mirror-name">下の記録</div><div class="mg-mirror-row" id="mg-mirror-bottom"></div></div>'+
       '<p class="mg-help mg-center">6つのスイッチはそれぞれ独立している。タップするたび0と1が入れ替わる。</p>'+
-      '<p class="mg-note" id="mg-mirror-note" role="status">上下の6桁が一致すると仕掛けが開きます。</p>';
+      '<p class="mg-note" id="mg-mirror-note" role="status">上下の同じ桁がすべて逆になれば、仕掛けが開きます。</p>';
     var top=root.querySelector("#mg-mirror-top"), bottom=root.querySelector("#mg-mirror-bottom"),note=root.querySelector("#mg-mirror-note");
     top.innerHTML=upper.split("").map(function(c){return '<span class="mg-bit">'+c+'</span>';}).join("");
     function draw(){bottom.innerHTML=bits.map(function(b,i){return '<button type="button" class="mg-bit mg-bit-switch" data-bit="'+i+'" aria-label="'+(i+1)+'桁目を反転">'+b+'</button>';}).join("");}
@@ -596,7 +596,7 @@
   }
   function memory(root,win) {
     var seq=[2,4,1,3], expected=0,waiting=true,finished=false,timers=[],token=0;
-    root.innerHTML='<p class="mg-instruction">4枚の板が点灯する順序を見て、同じ順番で触れよ。</p>'+
+    root.innerHTML='<p class="mg-instruction">4枚の板が点灯した順序どおりに触れればクリアです。</p>'+
       '<div class="mg-memory-grid">'+[1,2,3,4].map(function(n){return '<button type="button" data-memory="'+n+'" class="mg-memory-tile" aria-label="板 '+n+'">'+n+'</button>';}).join("")+'</div>'+
       '<div class="mg-small-actions mg-center"><button type="button" data-act="play">光の順番を見る</button></div>'+
       '<p class="mg-note mg-center" id="mg-memory-note" aria-live="polite">最初に「光の順番を見る」を押そう。</p>';
