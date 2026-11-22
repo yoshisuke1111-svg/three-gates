@@ -689,45 +689,34 @@
     const saved = JSON.parse(localStorage.getItem('three_gates_reverse_steps') || '[]');
     if (Array.isArray(saved)) reversedMarks = new Set(saved.filter(v => typeof v === 'string'));
   } catch (_) { /* ローカルファイル閲覧時のストレージ制限にも対応 */ }
-  // Remember the five's destruction through independent channels. Reading
-  // other game saves (or a malformed save) must NEVER reset this record.
-  function hasFiveBreakRecord() {
-    if (fiveWasDestroyed) return true;
-    const key = 'three_gates_five_destroyed';
-    try { if (localStorage.getItem(key) === 'yes') return true; } catch (_) {}
-    try { if (sessionStorage.getItem(key) === 'yes') return true; } catch (_) {}
-    try {
-      if (document.cookie.split(';').some(v => v.trim() === 'tg_three_gates_five=1')) return true;
-    } catch (_) {}
-    try { if (window.history.state?.threeGatesFiveDestroyed === true) return true; } catch (_) {}
-    try {
-      if (new URL(window.location.href).searchParams.get('tg5') === '1') return true;
-    } catch (_) {}
-    return false;
-  }
+  // The hidden first attempt is scoped to THIS page load. Persisting
+  // a five destruction in cookies, URL or storage used to make a new visit
+  // falsely count as the second attempt.
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
-  function rememberFiveBreak() {
-    // Keep the in-memory truth even if persistent storage has been disabled.
-    fiveWasDestroyed = true;
-    const key = 'three_gates_five_destroyed';
-    persist(key, 'yes');
-    try { sessionStorage.setItem(key, 'yes'); } catch (_) {}
+  function clearLegacyFiveBreakRecord() {
+    try { localStorage.removeItem('three_gates_five_destroyed'); } catch (_) {}
+    try { sessionStorage.removeItem('three_gates_five_destroyed'); } catch (_) {}
     try {
-      document.cookie = 'tg_three_gates_five=1; Path=/three-gates/; Max-Age=31536000; SameSite=Lax';
+      document.cookie='tg_three_gates_five=; Path=/three-gates/; Max-Age=0; SameSite=Lax';
     } catch (_) {}
     try {
-      // Preserve the user's existing ?v=... parameter and any anchor. The
-      // URL itself is a reload-safe backup if browser storage is unavailable.
-      const url = new URL(window.location.href);
-      url.searchParams.set('tg5', '1');
-      window.history.replaceState(
-        {...(window.history.state || {}), threeGatesFiveDestroyed:true},
-        '',
-        url.pathname + url.search + url.hash
-      );
+      const url=new URL(window.location.href);
+      const state={...(window.history.state || {})};
+      if(url.searchParams.has('tg5') || state.threeGatesFiveDestroyed === true) {
+        url.searchParams.delete('tg5');
+        delete state.threeGatesFiveDestroyed;
+        window.history.replaceState(state, '', url.pathname+url.search+url.hash);
+      }
     } catch (_) {}
   }
-  fiveWasDestroyed = hasFiveBreakRecord();
+  function hasFiveBreakRecord() {
+    return fiveWasDestroyed;
+  }
+  function rememberFiveBreak() {
+    // Set only after actually destroying five in the current page session.
+    fiveWasDestroyed=true;
+  }
+  clearLegacyFiveBreakRecord();
   function recordReverseStep(mark) {
     if (!mark) return;
     reversedMarks.add(mark);
@@ -745,8 +734,8 @@
     sceneView.inert=false;
   }
   function triggerBoxCollapse() {
-    // Save FIRST, including if the scene was hidden by an early transition.
-    // Otherwise a repeat entry would silently behave like the first attempt.
+    // Record this destruction for repeat entries in the same page only.
+    // Next full page load starts from HP 300 and the original 30 taps.
     rememberFiveBreak();
     if(sceneView.hidden)return;
     window.ThreeGatesCollapse?.run({
