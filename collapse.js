@@ -204,16 +204,54 @@
     document.body.appendChild(layer);
     return layer;
   }
+  function buildFallbackFragments(site){
+    // If word segmentation or a DOM range fails on a particular browser,
+    // still provide independently moving tiles and headline fragments.
+    var layer=document.createElement("div");
+    layer.className="tg-debris-layer tg-swarming";
+    layer.setAttribute("aria-hidden","true");
+    var targets=site.querySelectorAll(
+      ".masthead > *, .scene-nav > *, .scene-title, .scene-topline, "+
+      ".mg-slider-level-title, #mg-slide-board .mg-piece, "+
+      ".mg-small-actions > button, .mg-note, .scene-footnote");
+    Array.from(targets).slice(0,65).forEach(function(el,i){
+      var rect=el.getBoundingClientRect();
+      if(!rect || rect.width<2 || rect.height<2)return;
+      var shard=el.cloneNode(true);
+      shard.removeAttribute("id");
+      if(shard.querySelectorAll)shard.querySelectorAll("[id]").forEach(function(child){child.removeAttribute("id");});
+      shard.classList.add("tg-flight-piece","tg-debris-piece");
+      shard.setAttribute("aria-hidden","true");
+      shard.style.position="fixed";
+      shard.style.left=rect.left+"px";shard.style.top=rect.top+"px";
+      shard.style.width=rect.width+"px";shard.style.height=rect.height+"px";
+      shard.style.margin="0";
+      setFlightVars(shard,rect,i);
+      layer.appendChild(shard);
+    });
+    document.body.appendChild(layer);
+    return layer;
+  }
   function run(options){
-    if(active || !options || !options.site || !options.scene)return;
+    if(!options || !options.site || !options.scene)return;
+    // A previous failure must never leave a stale active lock that suppresses
+    // the NEXT destruction animation.
+    if(active)clear();
     var site=options.site,scene=options.scene,reduce=!!options.reduceMotion;
     var state={site:site,scene:scene,timers:[],layer:null};
     active=state;
     scene.inert=true;
     if(!reduce){
       // Snapshot positions before applying any shaking or color transforms.
-      state.layer=buildFragments(site);
-      site.classList.add("tg-corrupted","tg-detached");
+      // If a browser cannot measure one fragment, use a smaller but still
+      // independent falling-parts animation rather than failing silently.
+      try{
+        state.layer=buildFragments(site);
+      }catch(err){
+        try{state.layer=buildFallbackFragments(site);}catch(ignore){}
+      }
+      if(state.layer)site.classList.add("tg-corrupted","tg-detached");
+      else site.classList.add("tg-corrupted");
     }else{
       site.classList.add("tg-corrupted");
     }
@@ -227,7 +265,7 @@
         state.layer.classList.remove("tg-swarming");
         state.layer.classList.add("tg-dropping");
       }
-      site.classList.add("tg-falling");
+      if(state.layer)site.classList.add("tg-falling");
     },reduce?200:3100));
     state.timers.push(setTimeout(function(){
       if(active===state && typeof options.onReturn==="function")options.onReturn();
