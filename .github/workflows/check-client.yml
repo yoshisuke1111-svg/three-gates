@@ -22,7 +22,7 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=07') || !html.includes('mini-games.css?v=07')) throw new Error('Missing minigame assets');
+          if (!html.includes('mini-games.js?v=08') || !html.includes('mini-games.css?v=08')) throw new Error('Missing minigame assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
