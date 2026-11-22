@@ -10,11 +10,12 @@ assert(start!==-1&&end>start,'Hidden HP setup and functions must exist');
 
 const code=[
   'var hiddenTapCount=0,HP_TAPS=30;',
-  'var noted=0,draws=0;',
+  'var noted=0,draws=0,focusedHpId="5";',
   'var hpPanel={hidden:true,classList:{add:function(name){if(name==="is-visible")noted++;}}};',
-  'var hpStats={textContent:""};',
+  'var hpStats={textContent:""};
+  var hpBar={style:{width:"100%"}};',
   'var note={textContent:""};',
-  'var pieces=[{n:"1"},{n:"5"},{n:"2"},{n:"3"}];',
+  'var pieces=[{id:"1a",n:"1",hp:100,maxHp:100},{id:"5",n:"5",hp:300,maxHp:300},{id:"2a",n:"2",hp:200,maxHp:200},{id:"3a",n:"3",hp:200,maxHp:200}];',
   'function draw(){draws++;}',
   source.slice(start,end),
   'var hpMap=["1","2","3","5"].map(hpFor);',
@@ -34,7 +35,8 @@ assert.equal(result.atThreshold.count,30);
 assert.equal(result.atThreshold.hidden,false);
 assert.equal(result.atThreshold.reveals,1);
 assert.equal(result.atThreshold.draws,1,'Draw piece HP badges on unlock');
-for(const label of ['1 : 100','2 : 200','3 : 200','5 : 300']){
+assert(result.atThreshold.labels.includes('選択 5 : 300 / 300'),'Selected tile HP should be shown');
+for(const label of ['1=100','2=200','3=200','5=300']){
   assert(result.atThreshold.labels.includes(label),'Stats missing '+label);
 }
 assert.equal(result.after.count,30,'The secret should trigger only once');
@@ -64,6 +66,6 @@ assert(source.includes('if(e.detail===0 && e.target.closest("#mg-slide-board"))'
 assert(!source.includes('if(!cancelled)dragMove(e);'),
        'The original pointer release stability fix must remain');
 const html=fs.readFileSync('index.html','utf8');
-assert(html.includes('mini-games.js?v=16')&&html.includes('mini-games.css?v=16'),
-       'HP values should be served with fresh v0.16 assets');
+assert(html.includes('mini-games.js?v=17')&&html.includes('mini-games.css?v=17'),
+       'HP damage should be served with fresh v0.17 assets');
 console.log('HP mapping and visibility checks passed: 1=100, 2=200, 3=200, 5=300.');
