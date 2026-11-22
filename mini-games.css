@@ -118,3 +118,13 @@
   cursor:grabbing;
   transition:none!important;
 }
+
+/* v0.10: actual breathing room between draggable blocks. */
+#mg-slide-board .mg-piece{
+  box-sizing:border-box;
+  border-width:3px;
+  border-radius:7px;
+  min-width:0;
+  min-height:0;
+}
+#mg-slide-board .mg-piece span{pointer-events:none}
