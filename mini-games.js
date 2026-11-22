@@ -22,7 +22,7 @@
   var vector = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
   // The 5 tile is a 2x2 piece. Other tiles use the digit as a shape label.
   // Each level is an independently solvable 4x5 board; only the third gives a code.
-  function slider(root, win, onDestroyed) {
+  function slider(root, win, onDestroyed, options) {
     var levels = [
       {title:"最初の箱", label:"1 ×14 + 5", items:[
         ["5",1,0,2,2],
@@ -57,6 +57,7 @@
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
     var hiddenTapCount=0, hiddenTap=null, HP_TAPS=30, focusedHpId=null;
+    var instantFiveBreak=!!(options && options.instantFiveBreak);
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
@@ -145,12 +146,12 @@
         if(past){p.x=past.x;p.y=past.y;}
       });
     }
-    function damagePiece(id) {
-      if(hiddenTapCount<HP_TAPS || stageComplete || finished)return;
+    function damagePiece(id, instant) {
+      if((hiddenTapCount<HP_TAPS && !instant) || stageComplete || finished)return;
       var piece=pieces.find(function(p){return p.id===id;});
       if(!piece || piece.hp<=0)return;
       focusedHpId=id;
-      piece.hp=Math.max(0,piece.hp-1);
+      piece.hp=instant && id==="5" ? 0 : Math.max(0,piece.hp-1);
       if(piece.hp>0){draw();return;}
       if(piece.id==="5"){
         stageComplete=true;
@@ -169,6 +170,11 @@
     }
     function handleBoardTap(pieceId) {
       if(stageComplete || finished)return;
+      // Once the five has been destroyed, the next attempt is a trap:
+      // one direct tap shatters it, even before the HP display is unlocked.
+      if(pieceId==="5" && instantFiveBreak){
+        damagePiece("5",true);return;
+      }
       if(hiddenTapCount<HP_TAPS){
         registerHiddenTap(pieceId);
         return; // Hidden damage is periodically repaired before the reveal.
@@ -616,10 +622,10 @@
   }
   var factories={slider:slider, maze:maze, lights:lights, mirror:mirror, memory:memory};
   window.ThreeGatesMiniGames={
-    mount:function(root,kind,onWin,onDestroyed){
+    mount:function(root,kind,onWin,onDestroyed,options){
       var f=factories[kind];if(!f)throw new Error("Unknown minigame: "+kind);
       var completed=false;
-      return f(root,function(){if(completed)return;completed=true;onWin();},onDestroyed);
+      return f(root,function(){if(completed)return;completed=true;onWin();},onDestroyed,options);
     }
   };
 })();
