@@ -9,7 +9,7 @@ const begin=source.indexOf('    var MAX_HP_BY_NUMBER=');
 const end=source.indexOf('    function freshItems(index) {',begin);
 assert(begin>0&&end>begin,'HP functions missing');
 const code=[
-  'var hiddenTapCount=0,HP_TAPS=30,focusedHpId=null;',
+  'var hiddenTapCount=0,HP_TAPS=30,focusedHpId=null,repeatFiveBreak=false;',
   'var repairs=0,draws=0,reveals=0;',
   'var board={offsetWidth:300,classList:{remove:function(){},add:function(x){if(x==="mg-repair-pulse")repairs++;}}};',
   'var hpPanel={hidden:true,classList:{add:function(x){if(x==="is-visible")reveals++;}}};',
