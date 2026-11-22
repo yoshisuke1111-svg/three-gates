@@ -18,7 +18,7 @@ const code=[
   ' {id:"1a",n:"1",hp:100,maxHp:100},',
   ' {id:"2a",n:"0",hp:200,maxHp:200},',
   ' {id:"3a",n:"3",hp:200,maxHp:200},',
-  ' {id:"5",n:"2",hp:300,maxHp:300}',
+  ' {id:"5",n:"5",hp:300,maxHp:300}',
   '];',
   'function draw(){draws++;}',
   source.slice(begin,end),
@@ -37,10 +37,10 @@ const code=[
   '          stats:hpStats.textContent,repairs:repairs,reveals:reveals,focus:focusedHpId};',
   'for(let i=0;i<10;i++)registerHiddenTap("2a");',
   '({at9,at10,at19,at20,at29,at30,extra:{count:hiddenTapCount,',
-  '  reveals:reveals,repairs:repairs},hpMap:["0","1","2","3"].map(hpFor)});'
+  '  reveals:reveals,repairs:repairs},hpMap:["0","1","3","5"].map(hpFor)});'
 ].join('\n');
 const result=vm.runInNewContext(code);
-assert.deepEqual(Array.from(result.hpMap),[200,100,300,200]);
+assert.deepEqual(Array.from(result.hpMap),[200,100,200,300]);
 assert.equal(result.at9.hp,91,'Hidden taps deduct one HP each');
 assert.equal(result.at9.hidden,true);
 assert.equal(result.at10.hp,100,'First hidden repair restores full HP');
@@ -68,6 +68,6 @@ assert(source.includes('hpLabel.hidden=!exposed'),'Other badges must be hidden')
 assert(source.includes('if(travel<9 && (!drag || !drag.active)'),
        'A drag must not be interpreted as a damage tap');
 const html=fs.readFileSync('index.html','utf8');
-assert(html.includes('mini-games.js?v=24')&&html.includes('mini-games.css?v=24'),
+assert(html.includes('mini-games.js?v=25')&&html.includes('mini-games.css?v=25'),
        'The release must load fresh v0.24 assets');
 console.log('Hidden taps, repairs at 10/20/30 and one-piece HP visibility verified.');
