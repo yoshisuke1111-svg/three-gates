@@ -24,22 +24,29 @@
   // Each level is an independently solvable 4x5 board; only the third gives a code.
   function slider(root, win) {
     var levels = [
-      {title:"最初の箱", label:"1 + 5", items:[
+      {title:"最初の箱", label:"1 ×14 + 5", items:[
         ["5",1,0,2,2],
-        ["1a",0,2,1,1],["1b",1,2,1,1],["1c",2,2,1,1],["1d",3,2,1,1],
-        ["1e",0,3,1,1],["1f",1,3,1,1],["1g",2,3,1,1],["1h",3,3,1,1]
+        ["1a",0,0,1,1],["1b",3,0,1,1],
+        ["1c",0,1,1,1],["1d",3,1,1,1],
+        ["1e",0,2,1,1],["1f",1,2,1,1],["1g",2,2,1,1],["1h",3,2,1,1],
+        ["1i",0,3,1,1],["1j",1,3,1,1],["1k",2,3,1,1],["1l",3,3,1,1],
+        ["1m",0,4,1,1],["1n",3,4,1,1]
       ]},
-      {title:"横長の箱", label:"1 + 2 + 5", items:[
+      {title:"横長の箱", label:"1 ×8 + 2 ×3 + 5", items:[
         ["5",1,0,2,2],
-        ["2a",1,2,2,1],["2b",0,3,2,1],["2c",2,3,2,1],
-        ["1a",0,0,1,1],["1b",3,0,1,1],["1c",0,1,1,1],
-        ["1d",3,1,1,1],["1e",0,2,1,1]
+        ["2a",0,2,2,1],["2b",2,2,2,1],["2c",1,3,2,1],
+        ["1a",0,0,1,1],["1b",3,0,1,1],
+        ["1c",0,1,1,1],["1d",3,1,1,1],
+        ["1e",0,3,1,1],["1f",3,3,1,1],
+        ["1g",0,4,1,1],["1h",3,4,1,1]
       ]},
-      {title:"四種類の箱", label:"1 + 2 + 3 + 5", items:[
-        ["5",1,2,2,2],
-        ["3a",2,0,1,2],["3b",1,0,1,2],["3c",0,0,1,2],["3d",0,2,1,2],
-        ["2a",2,4,2,1],
-        ["1a",3,2,1,1],["1b",0,4,1,1],["1c",1,4,1,1],["1d",3,0,1,1]
+      {title:"四種類の箱", label:"1 ×4 + 2 + 3 ×4 + 5", items:[
+        ["5",1,0,2,2],
+        ["3a",0,0,1,2],["3b",3,0,1,2],
+        ["3c",0,2,1,2],["3d",3,2,1,2],
+        ["2a",1,2,2,1],
+        ["1a",1,3,1,1],["1b",2,3,1,1],
+        ["1c",0,4,1,1],["1d",3,4,1,1]
       ]}
     ];
     // Coordinates are continuous board units, not discrete grid cells.
@@ -52,7 +59,7 @@
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
-      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口まで運べ。駒を<b>好きな方向へ自由に引っ張ろう</b>。駒は見やすい大きさのまま、周囲の小さな隙間と押しのけ機能で動かせる。</p>'+
+      '<p class="mg-instruction">最上段の大きな <b>5</b> を下辺中央の出口まで運べ。<b>空きは小さな1の駒2個分だけ。</b>駒を自由に引っ張り、順序を考えて道を作ろう。</p>'+
       '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="仕切りのない箱。駒は自由な位置に動かせる"></div>'+
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
