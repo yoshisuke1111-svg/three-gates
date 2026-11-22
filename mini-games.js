@@ -24,7 +24,7 @@
   // Each level is an independently solvable 4x5 board; only the third gives a code.
   function slider(root, win, onDestroyed, options) {
     var levels = [
-      {title:"最初の箱", label:"1 ×14 + 2", items:[
+      {title:"最初の箱", label:"1 ×14 + 5", items:[
         ["5",1,0,2,2],
         ["1a",0,0,1,1],["1b",3,0,1,1],
         ["1c",0,1,1,1],["1d",3,1,1,1],
@@ -32,7 +32,7 @@
         ["1i",0,3,1,1],["1j",1,3,1,1],["1k",2,3,1,1],["1l",3,3,1,1],
         ["1m",0,4,1,1],["1n",3,4,1,1]
       ]},
-      {title:"横長の箱", label:"1 ×8 + 0 ×3 + 2", items:[
+      {title:"横長の箱", label:"1 ×8 + 0 ×3 + 5", items:[
         ["5",1,0,2,2],
         ["2a",0,2,2,1],["2b",2,2,2,1],["2c",1,3,2,1],
         ["1a",0,0,1,1],["1b",3,0,1,1],
@@ -40,7 +40,7 @@
         ["1e",0,3,1,1],["1f",3,3,1,1],
         ["1g",0,4,1,1],["1h",3,4,1,1]
       ]},
-      {title:"四種類の箱", label:"1 ×4 + 0 + 3 ×4 + 2", items:[
+      {title:"四種類の箱", label:"1 ×4 + 0 + 3 ×4 + 5", items:[
         ["5",1,0,2,2],
         ["3a",0,0,1,2],["3b",3,0,1,2],
         ["3c",0,2,1,2],["3d",3,2,1,2],
@@ -76,7 +76,7 @@
     var hpPanel=root.querySelector("#mg-slide-hp");
     var hpStats=root.querySelector("#mg-slide-hp-stats");
     var hpBar=root.querySelector("#mg-slide-hp .mg-secret-hp-fill");
-    var MAX_HP_BY_NUMBER={"0":200,"1":100,"2":300,"3":200};
+    var MAX_HP_BY_NUMBER={"0":200,"1":100,"3":200,"5":300};
     function hpFor(number) {
       return MAX_HP_BY_NUMBER[number] || 0;
     }
@@ -134,10 +134,10 @@
 
     function freshItems(index) {
       return levels[index].items.map(function (p) {
-        // IDs stay unchanged so every collision layout and the destruction trigger
-        // remain identical. Only the displayed box numerals are transformed.
+        // The large box stays visibly numbered 5. The horizontal old "2"
+        // pieces display "0"; internal IDs preserve physics and win checks.
         var original=p[0].charAt(0);
-        var type=original==="5"?"2":original==="2"?"0":original;
+        var type=original==="2"?"0":original;
         var maxHp=hpFor(type);
         return {id:p[0],n:type,x:p[1]+INSET,y:p[2]+INSET,w:p[3]-2*INSET,h:p[4]-2*INSET,
           hp:(repeatFiveBreak && p[0]==="5")?1:maxHp,maxHp:maxHp};
@@ -167,7 +167,7 @@
         draw(); // Keep the shattered five in view as the world collapses.
         var destroyed=board.querySelector('[data-piece="5"]');
         if(destroyed)destroyed.classList.add("mg-piece-shattered");
-        note.textContent="2のHPが0になった。箱の世界が崩れ始める……";
+        note.textContent="5のHPが0になった。箱の世界が崩れ始める……";
         if(typeof onDestroyed==="function")onDestroyed();
         return;
       }
@@ -221,7 +221,7 @@
         hpLabel.textContent=exposed?"HP "+p.hp:"";
         btn.setAttribute("aria-label","駒"+p.n+(exposed?"、HP "+p.hp+" / "+p.maxHp:"")+"を自由にドラッグして動かす");
         // Keep the physical tile's original visual style (large/long etc.)
-        // even though the number printed on it has changed.
+        // even when the horizontal "2" pieces display "0".
         btn.className="mg-piece mg-piece-"+p.id.charAt(0)+" mg-piece-movable"+
           (drag && drag.id===p.id?" is-dragging":"")+
           (hiddenTapCount<HP_TAPS && p.hp<p.maxHp?" mg-piece-faint-crack":"");
