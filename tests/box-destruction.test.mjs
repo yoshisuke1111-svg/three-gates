@@ -128,7 +128,7 @@ assert(cbStart>0&&cbEnd>cbStart,'Collapse callback extraction');
 const early=vm.runInNewContext([
   'var navigating=true,sceneView={hidden:false},fiveWasDestroyed=false,reduceMotion=false;',
   'var persisted=[],runs=[];',
-  'function persist(key,value){persisted.push([key,value]);}',
+  'function rememberFiveBreak(){fiveWasDestroyed=true;persisted.push(["three_gates_five_destroyed","yes"]);}',
   'function goHome(){}',
   'var document={querySelector:function(){return {};}};',
   'var window={ThreeGatesCollapse:{run:function(opts){runs.push(opts);}}};',
@@ -143,9 +143,9 @@ assert.deepEqual(Array.from(early.persisted,p=>Array.from(p)),
   [['three_gates_five_destroyed','yes']]);
 
 
-assert(index.includes("fiveWasDestroyed = localStorage.getItem('three_gates_five_destroyed')"),'Past destruction must be restored');
-assert(index.includes("persist('three_gates_five_destroyed','yes')"),'First destruction must be persisted');
-assert(index.includes("{instantFiveBreak:fiveWasDestroyed}"),'Replay condition must reach puzzle engine');
+assert(index.includes('fiveWasDestroyed = hasFiveBreakRecord();'),'Past destruction must be restored using independent persistence');
+assert(index.includes('rememberFiveBreak();'),'Each destruction must persist its history before checking scene status');
+assert(index.includes("{instantFiveBreak:hasFiveBreakRecord()}"),'Replay condition must be refreshed when opening the game');
 assert(index.includes("stage.game === 'slider' ? triggerBoxCollapse : undefined"),
        'The slider must supply a failure callback');
 const collapse=fs.readFileSync('collapse.js','utf8');
