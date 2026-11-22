@@ -63,5 +63,5 @@ jobs:
         run: node tests/box-destruction.test.mjs
       - name: Verify individual pieces fall and corrupted screen cleanup
         run: node tests/box-collapse.test.mjs
-      - name: Verify destruction memory survives storage failures and reloads
+      - name: Verify fresh-page first attempt ignores all old destruction flags
         run: node tests/box-persistence.test.mjs
