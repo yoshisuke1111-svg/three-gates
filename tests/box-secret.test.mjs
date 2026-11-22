@@ -12,8 +12,8 @@ const code=[
   'var hiddenTapCount=0,HP_TAPS=30;',
   'var noted=0,draws=0,focusedHpId="5";',
   'var hpPanel={hidden:true,classList:{add:function(name){if(name==="is-visible")noted++;}}};',
-  'var hpStats={textContent:""};
-  var hpBar={style:{width:"100%"}};',
+  'var hpStats={textContent:""};',
+  'var hpBar={style:{width:"100%"}};',
   'var note={textContent:""};',
   'var pieces=[{id:"1a",n:"1",hp:100,maxHp:100},{id:"5",n:"5",hp:300,maxHp:300},{id:"2a",n:"2",hp:200,maxHp:200},{id:"3a",n:"3",hp:200,maxHp:200}];',
   'function draw(){draws++;}',
@@ -59,7 +59,7 @@ assert.deepEqual(Array.from(generated,p=>Array.from(p)),[
   ['1a',100,100],['2a',200,200],['3a',200,200],['5',300,300]
 ]);
 assert(source.includes('hpLabel.textContent="HP "+p.hp'),'Piece label must display its own HP');
-assert(source.includes('travel<9 && !stageComplete && !finished'),
+assert(source.includes('travel<9 && (!drag || !drag.active) && !stageComplete && !finished'),
        'Tap detector should reject drags and ignore completed stages');
 assert(source.includes('if(e.detail===0 && e.target.closest("#mg-slide-board"))'),
        'Keyboard-activated board elements should also count');
