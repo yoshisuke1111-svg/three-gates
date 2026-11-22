@@ -669,6 +669,7 @@
   let typingToken = 0;
   let skipWriting = false;
   let miniGameCleanup = null;
+  let fiveWasDestroyed = false;
 
   let completedTutorial = false;
   let boxSolved = false;
@@ -682,6 +683,7 @@
   try {
     completedTutorial = localStorage.getItem('three_gates_tutorial_done') === 'yes';
     boxSolved = localStorage.getItem('three_gates_box_done') === 'yes';
+    fiveWasDestroyed = localStorage.getItem('three_gates_five_destroyed') === 'yes';
     normalGoalReached = localStorage.getItem('three_gates_normal_goal') === 'yes';
     completedNormal = localStorage.getItem('three_gates_normal_cleared') === 'yes';
     reverseAttempted = localStorage.getItem('three_gates_reverse_started') === 'yes';
@@ -707,6 +709,9 @@
   }
   function triggerBoxCollapse() {
     if(navigating || sceneView.hidden)return;
+    // Remember the first destruction across stages, reloads and retries.
+    fiveWasDestroyed = true;
+    persist('three_gates_five_destroyed','yes');
     window.ThreeGatesCollapse?.run({
       site:document.querySelector(".site"),
       scene:sceneView,
@@ -919,7 +924,8 @@
           '<div class="mg-win-code">' + escapeHtml(reward.finalCode || reward.code) + '</div>' +
           '<button type="button" class="button button--gold" id="miniGameToHome">INDEX に戻る ↗</button>' +
           '</div>';
-      }, stage.game === 'slider' ? triggerBoxCollapse : undefined);
+      }, stage.game === 'slider' ? triggerBoxCollapse : undefined,
+      stage.game === 'slider' ? {instantFiveBreak:fiveWasDestroyed} : undefined);
     });
   }
   function openStage(zone, value) {
