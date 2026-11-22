@@ -194,3 +194,32 @@
   from{opacity:0;transform:translateY(7px)}
   to{opacity:1;transform:translateY(0)}
 }
+
+/* v0.16: per-number HP values unlocked by the secret thirty-tap gesture. */
+#mg-slide-hp .mg-secret-hp-content{min-width:0;flex:1;display:grid;gap:7px}
+#mg-slide-hp .mg-secret-hp-stats{
+  font:600 12px/1.5 var(--fontMono,monospace);
+  letter-spacing:.03em;
+  color:#ffe4d8;
+  white-space:normal;
+}
+#mg-slide-hp .mg-secret-hp-track{width:100%;flex:auto}
+#mg-slide-board .mg-piece .mg-piece-hp{
+  position:absolute;
+  left:3px;
+  right:3px;
+  bottom:3px;
+  z-index:2;
+  display:block;
+  padding:1px 0;
+  border-radius:2px;
+  font:600 clamp(9px,1.3vw,11px)/1.2 var(--fontMono,monospace);
+  letter-spacing:0;
+  white-space:nowrap;
+  text-align:center;
+  color:#fff0df;
+  background:#1a1110ba;
+  text-shadow:0 1px 2px #000b;
+  pointer-events:none;
+}
+#mg-slide-board .mg-piece .mg-piece-hp[hidden]{display:none!important}
