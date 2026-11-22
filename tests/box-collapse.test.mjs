@@ -1,5 +1,5 @@
-// The catastrophic ending must drop frame pieces, controls, and each
-// individual tile separately, not animate the whole page as one object.
+// A five failure must fling actual words and tiles across the viewport,
+// freeze ALL of them, then independently drop them from top to bottom.
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -7,110 +7,151 @@ import assert from 'node:assert/strict';
 const source=fs.readFileSync('collapse.js','utf8');
 const css=fs.readFileSync('collapse.css','utf8');
 const index=fs.readFileSync('index.html','utf8');
-const scheduled=[];
-const cloned=[];
-const appended=[];
+const jobs=[],cloned=[],appended=[];
 let returned=0;
 
-function fakeElement(name,top=0,left=0,width=200,height=60){
-  const classes=new Set(name.split(' '));
+function element(name,top=0,left=0,width=200,height=60){
   const el={
-    id:name,hidden:false,className:name,children:[],removed:false,
+    name,hidden:false,removed:false,textContent:'',
+    className:name,children:[],
     style:{setProperty:function(k,v){this[k]=v;}},
-    classList:{
-      add:function(...tokens){tokens.forEach(t=>classes.add(t));},
-      remove:function(...tokens){tokens.forEach(t=>classes.delete(t));},
-      contains:function(t){return classes.has(t);}
-    },
     getBoundingClientRect:function(){return {top,left,width,height,bottom:top+height};},
     querySelectorAll:function(){return [];},
     querySelector:function(){return null;},
     closest:function(){return null;},
     removeAttribute:function(k){delete this[k];},
     setAttribute:function(){},
-    appendChild:function(child){this.children.push(child);},
+    appendChild:function(child){this.children.push(child);return child;},
     remove:function(){this.removed=true;},
-    cloneNode:function(deep){
-      cloned.push({name,deep});
-      return fakeElement(name,top,left,width,height);
-    }
+    cloneNode:function(deep){cloned.push({name,deep});return element(name,top,left,width,height);}
+  };
+  el.classList={
+    add:function(...v){
+      for(const token of v){
+        const arr=new Set(el.className.split(/\s+/).filter(Boolean));
+        arr.add(token);el.className=[...arr].join(' ');
+      }
+    },
+    remove:function(...v){
+      const arr=new Set(el.className.split(/\s+/).filter(Boolean));
+      for(const token of v)arr.delete(token);
+      el.className=[...arr].join(' ');
+    },
+    contains:function(v){return el.className.split(/\s+/).includes(v);}
   };
   return el;
 }
-const site=fakeElement('site');
+const site=element('site');
 const scene={inert:false};
-const masthead=fakeElement('masthead',10,20,350,30);
-const title=fakeElement('scene-title',85,40,250,50);
-const frame=fakeElement('mg-host',170,30,400,480);
-const board=fakeElement('mg-board',235,80,300,375);
-const tile1=fakeElement('mg-piece',260,95,60,60);
-const tile2=fakeElement('mg-piece',440,240,110,105);
-const note=fakeElement('scene-footnote',680,40,280,40);
-site.querySelectorAll=function(){return [masthead,title,frame,board,tile1,tile2,note];};
+const header=element('masthead',10,20,350,30);
+const title=element('scene-title',85,40,250,50);
+title.textContent='数字の箱';
+const frame=element('mg-host',170,30,400,480);
+const board=element('mg-board',235,80,300,375);
+const tile1=element('mg-piece',260,95,60,60);
+const tile2=element('mg-piece',440,240,110,105);
+const note=element('scene-footnote',680,40,280,40);
+note.textContent='出口へ進もう';
+site.querySelectorAll=function(selector){
+  if(selector.includes('.masthead .mark'))return [title,note];
+  return [header,title,frame,board,tile1,tile2,note];
+};
+function textWalker(parent){
+  let done=false;
+  const node={
+    textContent:parent.textContent,
+    parentElement:parent
+  };
+  return {nextNode:function(){
+    if(done)return null;
+    done=true;
+    return node.textContent?node:null;
+  }};
+}
 const context=vm.createContext({
   window:{
-    innerHeight:800,
-    getComputedStyle:function(){
-      return {
-        padding:'0px',color:'#ddd',background:'rgb(20,20,30)',
-        border:'2px solid #555',borderRadius:'4px',boxShadow:'none',
-        font:'16px serif',letterSpacing:'1px',lineHeight:'normal',
-        textAlign:'left',textShadow:'none',whiteSpace:'normal'
-      };
-    }
+    innerWidth:900,innerHeight:800,
+    getComputedStyle:function(){return {
+      padding:'0px',color:'#ddd',background:'rgb(20,20,30)',
+      border:'2px solid #555',borderRadius:'4px',boxShadow:'none',
+      font:'16px serif',letterSpacing:'0px',lineHeight:'normal',
+      textAlign:'left',textShadow:'none',whiteSpace:'normal'
+    };}
   },
   document:{
-    createElement:function(tag){return fakeElement(tag);},
+    createElement:function(tag){return element(tag);},
+    createTreeWalker:function(parent){return textWalker(parent);},
+    createRange:function(){
+      let textNode,start,end;
+      return {
+        setStart:function(n,i){textNode=n;start=i;},
+        setEnd:function(n,i){end=i;},
+        getBoundingClientRect:function(){
+          const parent=textNode.parentElement,r=parent.getBoundingClientRect();
+          return {top:r.top,left:r.left+start*12,width:(end-start)*12,
+                  height:23,bottom:r.top+23};
+        }
+      };
+    },
     body:{appendChild:function(el){appended.push(el);}}
   },
-  setTimeout:function(fn,delay){
-    const job={fn,delay,id:scheduled.length+1};
-    scheduled.push(job);return job.id;
-  },
+  NodeFilter:{SHOW_TEXT:4},
+  setTimeout:function(fn,delay){const job={fn,delay};jobs.push(job);return job;},
   clearTimeout:function(){},
   console
 });
 vm.runInContext(source,context);
 const collapse=context.window.ThreeGatesCollapse;
-assert(collapse && collapse.run && collapse.clear);
+assert(collapse&&collapse.run&&collapse.clear&&collapse.buildFragments);
+assert.equal(collapse.segmentWords('HELLO 世界').length>=2,true,'Text must be tokenized into words');
+
 collapse.run({site,scene,reduceMotion:false,onReturn:function(){returned++;}});
-assert(site.classList.contains('tg-corrupted'),'Corruption begins first');
-assert.equal(scene.inert,true,'Players cannot interact while the world breaks');
-assert(scheduled.some(s=>s.delay===1900),'Individual fall starts after distortion');
-assert(scheduled.some(s=>s.delay===4900),'The game must return afterward');
+assert.equal(scene.inert,true,'Controls must be locked as soon as the five dies');
+assert(site.classList.contains('tg-corrupted'));
+assert(site.classList.contains('tg-detached'),'The original site should be replaced by moving fragments');
+assert.equal(appended.length,1,'Fragments are captured immediately, before layout changes');
+assert(jobs.some(job=>job.delay===2500),'Motion freezes after flight');
+assert(jobs.some(job=>job.delay===3100),'Falling follows a silent pause');
+assert(jobs.some(job=>job.delay===6500),'The game returns after all pieces fall');
 
-scheduled.find(s=>s.delay===1900).fn();
-assert(site.classList.contains('tg-falling'));
-assert.equal(appended.length,1,'One independent-debris overlay should exist');
 const fragments=appended[0].children;
-assert.equal(fragments.filter(x=>x.className==='tg-debris-background').length,9,
-             'Background must break into nine separate strips');
-const falling=fragments.filter(x=>x.classList.contains('tg-debris-piece'));
-assert.equal(falling.length,7,'Every top-level part and both tiles fall independently');
-assert.equal(cloned.filter(c=>c.name==='mg-piece'&&c.deep).length,2,
-             'Both numbered tiles must be separately copied');
-assert(cloned.some(c=>c.name==='mg-board'&&!c.deep),
-       'Board frame must be separate from its tiles');
-assert(cloned.some(c=>c.name==='mg-host'&&!c.deep),
-       'The outer frame must not take its children down together');
-const tileDrops=falling.filter(x=>x.classList.contains('mg-piece'));
-assert.equal(tileDrops.length,2);
-assert.notEqual(tileDrops[0].style['--fall-delay'],tileDrops[1].style['--fall-delay'],
-                'Tiles need different departure times');
-const fallDelays=falling.map(x=>Number.parseInt(x.style['--fall-delay'],10));
-assert(fallDelays.every((v,i)=>i===0||v>=fallDelays[i-1]-132),
-       'Falling should generally proceed from higher screen positions to lower ones');
+assert.equal(fragments.filter(el=>el.classList.contains('tg-debris-background')).length,9,
+  'Background must be divided into nine independent strips');
+const tiles=fragments.filter(el=>el.classList.contains('tg-tile-piece'));
+assert.equal(tiles.length,2,'Every numbered tile should fly separately');
+assert.equal(cloned.filter(o=>o.name==='mg-piece'&&o.deep).length,2,
+  'Both tiles need their own visible digits');
+assert(cloned.some(o=>o.name==='mg-host'&&!o.deep),
+  'Outer frame must not take all its children down at once');
+assert(cloned.some(o=>o.name==='mg-board'&&!o.deep),
+  'Board frame must move separately from its tiles');
+const words=fragments.filter(el=>el.classList.contains('tg-word-piece'));
+assert(words.length>=4,'Visible text must split into separate flying word fragments');
+const motions=new Set(words.map(el=>[
+  el.style['--fly-stop-x'],el.style['--fly-stop-y']
+].join('/')));
+assert(motions.size>=4,'Words must head in different directions');
+const delays=tiles.map(el=>el.style['--fall-delay']);
+assert.notEqual(delays[0],delays[1],'The two tiles must fall independently');
 
-scheduled.find(s=>s.delay===4900).fn();
-assert.equal(returned,1,'The forced return happens once');
+jobs.find(job=>job.delay===2500).fn();
+assert(appended[0].classList.contains('tg-frozen'),
+  'Flying words must suddenly freeze');
+jobs.find(job=>job.delay===3100).fn();
+assert(appended[0].classList.contains('tg-dropping'));
+assert(site.classList.contains('tg-falling'));
+jobs.find(job=>job.delay===6500).fn();
+assert.equal(returned,1,'Force return exactly once');
 collapse.clear();
-assert.equal(scene.inert,false,'Input unlocks after returning home');
-assert(!site.classList.contains('tg-corrupted'));
+assert.equal(scene.inert,false);
+assert(!site.classList.contains('tg-detached'));
 assert(!site.classList.contains('tg-falling'));
-assert(appended[0].removed,'Temporary debris must be removed');
+assert(appended[0].removed);
 
-assert(css.includes('.site.tg-falling{visibility:hidden!important}'),
-       'The original page must not fall as a single container');
+assert(css.includes('.tg-debris-layer.tg-frozen .tg-flight-piece'));
+assert(css.includes('.tg-debris-layer.tg-dropping .tg-flight-piece'));
+assert(css.includes('@keyframes tg-flight-crash'));
 assert(css.includes('@media(prefers-reduced-motion:reduce)'));
-assert(index.includes('collapse.js?v=18')&&index.includes('collapse.css?v=18'));
-console.log('Separate frame, tile, button-ready fragment paths, falling delays and cleanup passed.');
+assert(index.includes('collapse.js?v=19')&&index.includes('collapse.css?v=19'));
+
+console.log('Independent flying words, sudden freeze, separate top-down collapse, and cleanup passed.');
