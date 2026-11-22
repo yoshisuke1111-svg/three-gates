@@ -21,7 +21,7 @@ const outcomes=vm.runInContext([
   '  {id:"5",n:"5",hp:300,maxHp:300,x:1,y:1}',
   '];',
   'var note={textContent:""};',
-  'var shattered={classList:{add:function(name){if(name==="mg-piece-shattered")this.shattered=true;}}};',
+  'var shattered={shattered:false,classList:{add:function(name){if(name==="mg-piece-shattered")shattered.shattered=true;}}};',
   'var board={querySelector:function(){return shattered;}};',
   'function onDestroyed(){destroyedCount++;}',
   'function draw(){draws++;}',
