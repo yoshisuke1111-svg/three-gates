@@ -12,7 +12,7 @@ const code=src.slice(a,b);
 
 const sandbox=vm.createContext({});
 const outcomes=vm.runInContext([
-  'var hiddenTapCount=29, HP_TAPS=30, focusedHpId="5";',
+  'var hiddenTapCount=29, HP_TAPS=30, focusedHpId="5", instantFiveBreak=false;'
   'var stageComplete=false, finished=false, destroyedCount=0,draws=0,unlocked=0;',
   'var pieces=[',
   '  {id:"1a",n:"1",hp:100,maxHp:100,x:0,y:0},',
@@ -69,18 +69,43 @@ assert.equal(outcomes.destroyedAfterExtraTaps,1,'Further taps must not start a s
 assert.equal(outcomes.finalHp,0);
 assert.equal(outcomes.unlocked,1);
 
+// After a five was previously destroyed, the next attempt must
+// shatter it with ONE direct tap, even without revealing the HP counter.
+const repeat=vm.runInNewContext([
+  'var hiddenTapCount=0,HP_TAPS=30,focusedHpId=null,instantFiveBreak=true;',
+  'var stageComplete=false,finished=false,triggered=0,draws=0;',
+  'var pieces=[{id:"5",n:"5",hp:300,maxHp:300,x:1,y:0}];',
+  'var note={textContent:""};',
+  'var board={querySelector:function(){return {classList:{add:function(){}}};}};',
+  'function onDestroyed(){triggered++;}',
+  'function draw(){draws++;}',
+  'function registerHiddenTap(){throw Error("Repeat kill should bypass HP unlock");}',
+  code,
+  'handleBoardTap("5");',
+  'var first={hp:pieces[0].hp,finished:finished,triggered:triggered};',
+  'handleBoardTap("5");',
+  '({first:first,secondTriggered:triggered});'
+].join('\n'));
+assert.equal(repeat.first.hp,0,'The five should drop from 300 to zero in one tap');
+assert.equal(repeat.first.finished,true);
+assert.equal(repeat.first.triggered,1);
+assert.equal(repeat.secondTriggered,1,'Repeat taps must not trigger again');
+
 const index=fs.readFileSync('index.html','utf8');
 assert(index.includes('function triggerBoxCollapse()'),'Global collapse must be wired');
+assert(index.includes("fiveWasDestroyed = localStorage.getItem('three_gates_five_destroyed')"),'Past destruction must be restored');
+assert(index.includes("persist('three_gates_five_destroyed','yes')"),'First destruction must be persisted');
+assert(index.includes("{instantFiveBreak:fiveWasDestroyed}"),'Replay condition must reach puzzle engine');
 assert(index.includes("stage.game === 'slider' ? triggerBoxCollapse : undefined"),
        'The slider must supply a failure callback');
 const collapse=fs.readFileSync('collapse.js','utf8');
 assert(index.includes('window.ThreeGatesCollapse?.run('),'The index must call the collapse engine');
 assert(collapse.includes('function buildFragments(site)'),'Individual fragments must be created');
-assert(collapse.includes('var shard=el.cloneNode(!isFrame)'),'Empty frames and separate children required');
+assert(collapse.includes('var shard=source.cloneNode(deep)'),'Frames and tiles must be separately copied');
 assert(collapse.includes('"#mg-slide-board .mg-piece"'),'Individual blocks must fall');
 assert(collapse.includes('site.classList.add("tg-falling")'),'Fragments must replace original layout');
 assert(collapse.includes('scene.inert=true'),'Inputs must be frozen during collapse');
-assert(collapse.includes('reduce?760:4900'),'Reduced-motion option must be honored');
+assert(collapse.includes('reduce?780:6500'),'Reduced-motion option must be honored');
 assert(index.includes("!(zone === '3' && stage.game === 'slider')"),
        'The OPEN code should be kept for quick retry after returning home');
 const css=fs.readFileSync('mini-games.css','utf8');
