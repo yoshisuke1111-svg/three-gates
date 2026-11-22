@@ -708,7 +708,9 @@
     sceneView.inert=false;
   }
   function triggerBoxCollapse() {
-    if(navigating || sceneView.hidden)return;
+    // A re-entry can be playable while the entrance transition still has
+    // navigating=true. Never drop the destruction callback at that point.
+    if(sceneView.hidden)return;
     // Remember the first destruction across stages, reloads and retries.
     fiveWasDestroyed = true;
     persist('three_gates_five_destroyed','yes');
