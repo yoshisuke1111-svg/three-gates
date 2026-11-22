@@ -44,7 +44,7 @@
     ];
     // Coordinates are continuous board units, not discrete grid cells.
     // The original arrangement remains 4 x 5, but pieces can end at any position.
-    var W=4,H=5, EPS=0.000001, INSET=0.15;
+    var W=4,H=5, EPS=0.000001, INSET=0.15, PUSH_LIMIT=0.17, NUDGE=0.006;
     // Every side of every block has a real, visible clearance: 0.30 board units
     // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
@@ -56,7 +56,7 @@
       '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="仕切りのない箱。駒は自由な位置に動かせる"></div>'+
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
-      '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。壁や別の駒をすり抜けることはできない。行き詰まったら「一手戻す」でやり直せる。</p>'+
+      '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。ほんの少しの引っかかりなら周りの駒が押し出される。離す瞬間には位置が飛ばない。行き詰まったら「一手戻す」でやり直せる。</p>'+
       '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">このステージをやり直す</button></div>'+
       '<p class="mg-note" id="mg-slide-note" aria-live="polite"></p></div></div>'+
       '<div id="mg-slide-next" aria-live="polite"></div>';
@@ -111,45 +111,97 @@
         btn.style.top=(p.y/H*100)+"%";
       }
     }
-    // A swept, axis-by-axis collision test. Even a fast pointer movement
-    // cannot teleport a piece through an occupied rectangle.
-    function shiftAxis(piece,axis,delta) {
-      if(Math.abs(delta)<EPS)return;
-      var size=axis==="x"?piece.w:piece.h;
-      var limit=axis==="x"?W:H;
-      var current=piece[axis];
-      var target=Math.max(0,Math.min(limit-size,current+delta));
-      var forward=target>current+EPS;
-      var backward=target<current-EPS;
-      if(!forward && !backward)return;
-      pieces.forEach(function(other){
-        if(other.id===piece.id)return;
-        var intersects=axis==="x"?
-          (piece.y<other.y+other.h-EPS && piece.y+piece.h>other.y+EPS):
-          (piece.x<other.x+other.w-EPS && piece.x+piece.w>other.x+EPS);
-        if(!intersects)return;
-        var otherStart=other[axis];
-        var otherEnd=otherStart+(axis==="x"?other.w:other.h);
-        if(forward && otherStart>=current+size-EPS){
-          target=Math.min(target,otherStart-size);
-        }else if(backward && otherEnd<=current+EPS){
-          target=Math.max(target,otherEnd);
-        }
+    // Move continuously; small accidental contacts can gently push adjacent
+    // pieces aside. Each passive piece moves at most PUSH_LIMIT in one gesture.
+    function overlapsAt(piece,axis,value,other) {
+      var px=axis==="x"?value:piece.x, py=axis==="y"?value:piece.y;
+      return px<other.x+other.w-EPS && px+piece.w>other.x+EPS &&
+             py<other.y+other.h-EPS && py+piece.h>other.y+EPS;
+    }
+    function restorePositions(before) {
+      before.forEach(function(old){
+        var current=pieces.find(function(p){return p.id===old.id;});
+        if(current){current.x=old.x;current.y=old.y;}
       });
+    }
+    function gentlyPush(piece,axis,amount,ctx,stack) {
+      if(Math.abs(amount)<EPS)return true;
+      if(stack.indexOf(piece.id)!==-1 || stack.length>pieces.length)return false;
+      if(piece.id===ctx.activeId)return false;
+      var size=axis==="x"?piece.w:piece.h, limit=axis==="x"?W:H;
+      var target=piece[axis]+amount;
+      var initial=ctx.start.find(function(p){return p.id===piece.id;});
+      if(!initial || target<-EPS || target+size>limit+EPS ||
+         Math.abs(target-initial[axis])>PUSH_LIMIT+EPS)return false;
+      var chain=stack.concat(piece.id);
+      for(var i=0;i<pieces.length;i++){
+        var other=pieces[i];
+        if(other.id===piece.id || !overlapsAt(piece,axis,target,other))continue;
+        var otherSize=axis==="x"?other.w:other.h;
+        var needed=amount>0
+          ? target+size-other[axis]+NUDGE
+          : target-other[axis]-otherSize-NUDGE;
+        if(!gentlyPush(other,axis,needed,ctx,chain))return false;
+      }
+      piece[axis]=Math.max(0,Math.min(limit-size,target));
+      return true;
+    }
+    function attemptPush(piece,axis,amount,ctx) {
+      var before=snapshot();
+      if(gentlyPush(piece,axis,amount,ctx,[]))return true;
+      restorePositions(before);
+      return false;
+    }
+    function shiftAxis(piece,axis,delta,ctx) {
+      if(Math.abs(delta)<EPS)return;
+      var size=axis==="x"?piece.w:piece.h,limit=axis==="x"?W:H;
+      var current=piece[axis],target=Math.max(0,Math.min(limit-size,current+delta));
+      var forward=target>current+EPS,backward=target<current-EPS;
+      if(!forward&&!backward)return;
+      var cross=axis==="x"?"y":"x";
+      for(var i=0;i<pieces.length;i++){
+        var other=pieces[i];
+        if(other.id===piece.id || !overlapsAt(piece,axis,target,other))continue;
+        var crossSize=cross==="x"?piece.w:piece.h;
+        var otherCrossSize=cross==="x"?other.w:other.h;
+        var up=other[cross]+otherCrossSize-piece[cross]+NUDGE;
+        var down=piece[cross]+crossSize-other[cross]+NUDGE;
+        var choices=[-up,down].sort(function(x,y){return Math.abs(x)-Math.abs(y);});
+        var cleared=false;
+        // Prefer nudging the passive piece sideways out of the narrow gap.
+        for(var j=0;j<choices.length;j++){
+          var n=choices[j];
+          if(Math.abs(n)>PUSH_LIMIT+EPS)continue;
+          if(attemptPush(other,cross,n,ctx) && !overlapsAt(piece,axis,target,other)){
+            cleared=true;break;
+          }
+        }
+        if(cleared)continue;
+        // Or gently push it ahead, but never shove a pile of blocks far away.
+        var otherSize=axis==="x"?other.w:other.h;
+        var along=forward
+          ? target+size-other[axis]+NUDGE
+          : target-other[axis]-otherSize-NUDGE;
+        if(Math.abs(along)<=PUSH_LIMIT+EPS &&
+           attemptPush(other,axis,along,ctx) &&
+           !overlapsAt(piece,axis,target,other))continue;
+        // Too tight, or nowhere to push: stop at the actual contact surface.
+        var contact=forward?other[axis]-size:other[axis]+otherSize;
+        target=forward?Math.min(target,contact):Math.max(target,contact);
+      }
       piece[axis]=Math.max(0,Math.min(limit-size,target));
     }
-    function moveFree(piece,dx,dy) {
-      // Sweep in small increments so diagonal motion follows corners rather
-      // than cutting through them. No integer rounding or grid snapping.
-      var count=Math.max(1,Math.min(100,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/0.12)));
+    function moveFree(piece,dx,dy,ctx) {
+      // Small swept increments preserve collision even on a fast swipe.
+      var count=Math.max(1,Math.min(100,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/0.10)));
       var stepX=dx/count,stepY=dy/count;
       for(var i=0;i<count;i++){
         if(Math.abs(stepX)>Math.abs(stepY)){
-          shiftAxis(piece,"x",stepX);
-          shiftAxis(piece,"y",stepY);
+          shiftAxis(piece,"x",stepX,ctx);
+          shiftAxis(piece,"y",stepY,ctx);
         }else{
-          shiftAxis(piece,"y",stepY);
-          shiftAxis(piece,"x",stepX);
+          shiftAxis(piece,"y",stepY,ctx);
+          shiftAxis(piece,"x",stepX,ctx);
         }
       }
     }
@@ -218,8 +270,8 @@
       var dy=(e.clientY-current.lastY)/current.unitY;
       current.lastX=e.clientX;
       current.lastY=e.clientY;
-      moveFree(current.piece,dx,dy);
-      showPiece(current.piece);
+      moveFree(current.piece,dx,dy,{start:current.start,activeId:current.id});
+      pieces.forEach(showPiece);
     }
     function onMove(e) {
       if(!drag || drag.pointerId!==e.pointerId)return;
@@ -228,7 +280,8 @@
     }
     function endDrag(e,cancelled) {
       if(!drag || drag.pointerId!==e.pointerId)return;
-      if(!cancelled)dragMove(e);
+      // Do not apply the pointerup coordinates: phones and mice can report a
+      // slightly different release position. Keep the last visible frame.
       var current=drag;
       drag=null;
       current.element.classList.remove("is-dragging");
@@ -236,19 +289,20 @@
          current.element.hasPointerCapture(current.pointerId)){
         try{current.element.releasePointerCapture(current.pointerId);}catch(ignore){}
       }
-      var piece=current.piece;
-      var from=current.start.find(function(p){return p.id===piece.id;});
-      var changed=Math.hypot(piece.x-from.x,piece.y-from.y)>0.018;
-      if(cancelled || !changed){
-        piece.x=from.x;piece.y=from.y;draw();
-        return;
+      if(cancelled){
+        restorePositions(current.start);draw();return;
       }
+      var changed=pieces.some(function(p){
+        var before=current.start.find(function(q){return q.id===p.id;});
+        return Math.hypot(p.x-before.x,p.y-before.y)>0.001;
+      });
+      if(!changed){draw();return;}
       history.push(current.start);
       moves++;
-      lastPiece=piece.id;
-      note.textContent="駒は離した場所に止まる。マス目に戻す必要はない。";
+      lastPiece=current.id;
+      note.textContent="離した瞬間は動かさず、軽い接触だけ周りを押しのける。";
       draw();
-      checkWin(piece);
+      checkWin(current.piece);
     }
     function onUp(e){endDrag(e,false);}
     function onCancel(e){endDrag(e,true);}
@@ -265,9 +319,11 @@
       var p=pieces.find(function(item){return item.id===id;});
       if(!p)return;
       var start=snapshot(),vx=vector[dir][0]*0.25,vy=vector[dir][1]*0.25;
-      moveFree(p,vx,vy);
-      if(Math.hypot(p.x-start.find(function(q){return q.id===id;}).x,
-                    p.y-start.find(function(q){return q.id===id;}).y)>0.018){
+      moveFree(p,vx,vy,{start:start,activeId:id});
+      if(pieces.some(function(q){
+        var before=start.find(function(o){return o.id===q.id;});
+        return Math.hypot(q.x-before.x,q.y-before.y)>0.001;
+      })){
         history.push(start);moves++;lastPiece=id;
         note.textContent="キー操作で少し動かした。";draw();
         checkWin(p);
