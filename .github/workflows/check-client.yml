@@ -7,6 +7,7 @@ on:
       - 'mini-games.css'
       - 'tests/box-physics.test.mjs'
       - 'tests/box-layout.test.mjs'
+      - 'tests/box-secret.test.mjs'
       - '.github/workflows/check-client.yml'
   workflow_dispatch:
 jobs:
@@ -24,7 +25,7 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=14') || !html.includes('mini-games.css?v=14')) throw new Error('Missing minigame assets');
+          if (!html.includes('mini-games.js?v=15') || !html.includes('mini-games.css?v=15')) throw new Error('Missing minigame assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
@@ -46,3 +47,5 @@ jobs:
         run: node tests/box-physics.test.mjs
       - name: Verify all three levels are solvable with two empty cells
         run: node tests/box-layout.test.mjs
+      - name: Verify hidden HP tap-count easter egg
+        run: node tests/box-secret.test.mjs
