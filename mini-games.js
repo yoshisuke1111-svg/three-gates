@@ -82,7 +82,7 @@
       var nx=piece.x+vector[dir][0],ny=piece.y+vector[dir][1];
       if(nx<0||ny<0||nx+piece.w>4||ny+piece.h>5)return false;
       return pieces.every(function(q){
-        return q===piece || !(nx<q.x+q.w && nx+piece.w>q.x && ny<q.y+q.h && ny+piece.h>q.y);
+        return q.id===piece.id || !(nx<q.x+q.w && nx+piece.w>q.x && ny<q.y+q.h && ny+piece.h>q.y);
       });
     }
     function legalDirs(piece) {
