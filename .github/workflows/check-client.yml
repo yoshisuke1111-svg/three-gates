@@ -5,6 +5,7 @@ on:
       - 'index.html'
       - 'mini-games.js'
       - 'mini-games.css'
+      - 'tests/box-physics.test.mjs'
       - '.github/workflows/check-client.yml'
   workflow_dispatch:
 jobs:
@@ -22,7 +23,7 @@ jobs:
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=10') || !html.includes('mini-games.css?v=10')) throw new Error('Missing minigame assets');
+          if (!html.includes('mini-games.js?v=11') || !html.includes('mini-games.css?v=11')) throw new Error('Missing minigame assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
@@ -34,5 +35,11 @@ jobs:
           if (!games.includes('INSET=0.15') || !games.includes('w:p[3]-2*INSET')) throw new Error('Missing physical block clearance');
           if (!games.includes('piece.y+piece.h>=H-INSET-0.05')) throw new Error('Win check not adjusted for clearance');
           if (games.includes('["1f",3,2,1,1]')) throw new Error('Stage 2 remains overcrowded');
+          if (!games.includes('PUSH_LIMIT=0.17') || !games.includes('function gentlyPush(')) {
+            throw new Error('Missing gentle push collision handling');
+          }
+          if (games.includes('if(!cancelled)dragMove(e);')) throw new Error('Pointerup still shifts piece');
           console.log('Syntax, assets and free-form movement checks passed');
           NODE
+      - name: Regression test dragging and collision response
+        run: node tests/box-physics.test.mjs
