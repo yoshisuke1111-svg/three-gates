@@ -33,7 +33,7 @@
         ["5",1,0,2,2],
         ["2a",1,2,2,1],["2b",0,3,2,1],["2c",2,3,2,1],
         ["1a",0,0,1,1],["1b",3,0,1,1],["1c",0,1,1,1],
-        ["1d",3,1,1,1],["1e",0,2,1,1],["1f",3,2,1,1]
+        ["1d",3,1,1,1],["1e",0,2,1,1]
       ]},
       {title:"四種類の箱", label:"1 + 2 + 3 + 5", items:[
         ["5",1,2,2,2],
@@ -44,17 +44,19 @@
     ];
     // Coordinates are continuous board units, not discrete grid cells.
     // The original arrangement remains 4 x 5, but pieces can end at any position.
-    var W=4,H=5, EPS=0.000001;
+    var W=4,H=5, EPS=0.000001, INSET=0.15;
+    // Every side of every block has a real, visible clearance: 0.30 board units
+    // between adjacent blocks. Collision bounds match the visual dimensions.
     var levelIndex=0, pieces=[], history=[], moves=0, lastPiece="5";
     var stageComplete=false, finished=false, drag=null;
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
-      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口まで運べ。駒を<b>好きな方向へ自由に引っ張ろう</b>。</p>'+
+      '<p class="mg-instruction">大きな <b>5</b> を、下辺中央の出口まで運べ。駒を<b>好きな方向へ自由に引っ張ろう</b>。駒の周囲に動かせる余白を設けてある。</p>'+
       '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="仕切りのない箱。駒は自由な位置に動かせる"></div>'+
       '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
-      '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。壁や別の駒をすり抜けることはできない。</p>'+
+      '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。壁や別の駒をすり抜けることはできない。行き詰まったら「一手戻す」でやり直せる。</p>'+
       '<div class="mg-small-actions"><button type="button" data-act="undo">一手戻す</button><button type="button" data-act="reset">このステージをやり直す</button></div>'+
       '<p class="mg-note" id="mg-slide-note" aria-live="polite"></p></div></div>'+
       '<div id="mg-slide-next" aria-live="polite"></div>';
@@ -64,7 +66,7 @@
 
     function freshItems(index) {
       return levels[index].items.map(function (p) {
-        return {id:p[0],n:p[0].charAt(0),x:p[1],y:p[2],w:p[3],h:p[4]};
+        return {id:p[0],n:p[0].charAt(0),x:p[1]+INSET,y:p[2]+INSET,w:p[3]-2*INSET,h:p[4]-2*INSET};
       });
     }
     function snapshot() {
@@ -154,7 +156,7 @@
     function checkWin(piece) {
       // Approximate alignment is enough: precise pixel-perfect positioning
       // should never be required after switching off grid snapping.
-      if(piece.id==="5" && piece.y>=H-piece.h-0.025 &&
+      if(piece.id==="5" && piece.y+piece.h>=H-INSET-0.05 &&
          Math.abs(piece.x-(W-piece.w)/2)<=0.25){
         clearLevel();
       }
