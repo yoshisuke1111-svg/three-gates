@@ -12,7 +12,7 @@ const physics = source.slice(begin, end);
 
 function scenario(name, objects, dx, dy) {
   const setup = [
-    'var W=4,H=5,EPS=0.000001,INSET=0.06,PUSH_LIMIT=0.35,NUDGE=0.006;',
+    'var W=4,H=5,EPS=0.000001,INSET=0.01,PUSH_LIMIT=0.35,NUDGE=0.006;',
     'var pieces='+JSON.stringify(objects)+';',
     'function snapshot(){return pieces.map(p=>Object.assign({},p));}',
     physics,
@@ -70,13 +70,13 @@ const box=(id,x,y,w=.7,h=.7)=>({id,x,y,w,h});
 }
 {
   const [active,passive]=scenario('near-full-size tile nudge',
-    [box('A',.8,1,.88,.88),box('B',1.70,1,.88,.88)],.20,0);
+    [box('A',.8,1,.98,.98),box('B',1.80,1,.98,.98)],.20,0);
   assert(active.x>0.97,
          'A large tile should not stick when a minor push solves contact');
-  assert(passive.x>1.85 && passive.x<2.06,
+  assert(passive.x>1.95 && passive.x<2.10,
          'Large neighboring tile should only shift as needed');
 }
-assert(source.includes('INSET=0.06') && source.includes('PUSH_LIMIT=0.35'),
+assert(source.includes('INSET=0.01') && source.includes('PUSH_LIMIT=0.35'),
        'Game tile sizing and nudge tolerance should match the tuned values');
 assert(!source.includes('if(!cancelled)dragMove(e);'),
        'Releasing the pointer must not apply a final extra displacement');
