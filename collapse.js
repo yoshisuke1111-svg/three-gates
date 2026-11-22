@@ -210,11 +210,12 @@
     var state={site:site,scene:scene,timers:[],layer:null};
     active=state;
     scene.inert=true;
-    site.classList.add("tg-corrupted");
     if(!reduce){
-      // Snapshot first: before anything moves, while DOM ranges are stable.
+      // Snapshot positions before applying any shaking or color transforms.
       state.layer=buildFragments(site);
-      site.classList.add("tg-detached");
+      site.classList.add("tg-corrupted","tg-detached");
+    }else{
+      site.classList.add("tg-corrupted");
     }
     state.timers.push(setTimeout(function(){
       if(active!==state)return;
