@@ -61,9 +61,9 @@
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
-      '<p class="mg-instruction">最上段の大きな <b>5</b> を下辺中央の出口まで運べ。<b>空きは小さな1の駒2個分だけ。</b>駒を自由に引っ張り、順序を考えて道を作ろう。</p>'+
+      '<p class="mg-instruction" id="mg-slide-instruction"></p>'+
       '<div class="mg-layout"><div class="mg-board-area"><div class="mg-board" id="mg-slide-board" aria-label="仕切りのない箱。駒は自由な位置に動かせる"></div>'+
-      '<div class="mg-exit-mark">▼ EXIT / 5</div></div>'+
+      '<div class="mg-exit-mark">▼ EXIT</div></div>'+
       '<div class="mg-side"><p class="mg-caption">NUMBERED BOX / FREE SLIDE</p><p class="mg-counter" id="mg-slide-counter">MOVES 000</p>'+
       '<p class="mg-help">指で押さえて引っ張ると、そのまま駒がついてくる。<b>斜め移動もでき、離した位置にそのまま残る。</b>マス目への吸着なし。ほんの少しの引っかかりなら周りの駒が押し出される。離す瞬間には位置が飛ばない。行き詰まったら「一手戻す」でやり直せる。</p>'+
       '<div class="mg-secret-hp" id="mg-slide-hp" hidden aria-live="polite"><span class="mg-secret-hp-label">HP</span><div class="mg-secret-hp-content"><div class="mg-secret-hp-stats" id="mg-slide-hp-stats"></div><span class="mg-secret-hp-track" aria-hidden="true"><span class="mg-secret-hp-fill"></span></span></div></div>'+
@@ -192,7 +192,11 @@
       root.querySelector("#mg-slide-stage").textContent="STAGE "+(index+1)+" / "+levels.length;
       root.querySelector("#mg-slide-types").textContent=levels[index].label;
       root.querySelector("#mg-slide-title").textContent=levels[index].title;
-      note.textContent="どの駒も指でつかんで、自由な位置まで動かせる。";
+      root.querySelector("#mg-slide-instruction").innerHTML=
+        '<b>4を下の出口まで運べば、'+
+        (index===levels.length-1?'ゴールです。':'次のステージへ進めます。')+
+        '</b>空きは「1」の駒2個分です。駒はドラッグで自由に動かせます。';
+      note.textContent="どの駒もドラッグで自由な位置まで動かせます。";
       draw();
     }
     function draw() {
@@ -335,7 +339,7 @@
     function clearLevel() {
       stageComplete=true;
       board.classList.add("mg-cleared");
-      note.textContent="5が出口へ届いた！";
+      note.textContent="出口に届きました。";
       var last=levelIndex===levels.length-1;
       next.innerHTML=
         '<div class="mg-win appear"><p class="mg-win-label">STAGE '+(levelIndex+1)+' CLEAR / '+levels.length+'</p>'+
@@ -505,7 +509,7 @@
   function maze(root, win) {
     var map=["S..#..","##.#.#","...#..",".#...#",".#.#..","...#.G"];
     var x=0,y=0,steps=0,finished=false,touch=null;
-    root.innerHTML='<p class="mg-instruction">白い通路だけを通り、光点を <b>GOAL</b> へ運べ。壁は通れない。</p>'+
+    root.innerHTML='<p class="mg-instruction">白い通路を通り、光点が <b>GOAL</b> に着けばクリアです。壁は通れません。</p>'+
       '<div class="mg-layout"><div class="mg-maze" id="mg-maze-grid" aria-label="6×6の移動迷路"></div>'+
       '<div class="mg-side"><p class="mg-caption">LABYRINTH / 01</p><p class="mg-counter" id="mg-maze-counter">MOVES 000</p>'+
       '<p class="mg-help">矢印で操作。または近くのマスをタップして進める。</p>'+
