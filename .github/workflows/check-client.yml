@@ -5,10 +5,13 @@ on:
       - 'index.html'
       - 'mini-games.js'
       - 'mini-games.css'
+      - 'collapse.js'
+      - 'collapse.css'
       - 'tests/box-physics.test.mjs'
       - 'tests/box-layout.test.mjs'
       - 'tests/box-secret.test.mjs'
       - 'tests/box-destruction.test.mjs'
+      - 'tests/box-collapse.test.mjs'
       - '.github/workflows/check-client.yml'
   workflow_dispatch:
 jobs:
@@ -20,13 +23,15 @@ jobs:
       - name: Validate JavaScript
         run: |
           node --check mini-games.js
+          node --check collapse.js
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import vm from 'node:vm';
           const html = fs.readFileSync('index.html', 'utf8');
           const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1].trim()).filter(Boolean);
           for (const script of blocks) new vm.Script(script);
-          if (!html.includes('mini-games.js?v=17') || !html.includes('mini-games.css?v=17')) throw new Error('Missing minigame assets');
+          if (!html.includes('mini-games.js?v=18') || !html.includes('mini-games.css?v=18')) throw new Error('Missing minigame assets');
+          if (!html.includes('collapse.js?v=18') || !html.includes('collapse.css?v=18')) throw new Error('Missing separate collapse assets');
           for (const key of ['OPEN','PATH','GLASS','MIRROR','ORIGIN']) {
             if (!html.includes('"'+key+'"')) throw new Error('Missing stage '+key);
           }
@@ -53,3 +58,5 @@ jobs:
         run: node tests/box-secret.test.mjs
       - name: Verify per-tap damage and special five-destruction failure
         run: node tests/box-destruction.test.mjs
+      - name: Verify individual pieces fall and corrupted screen cleanup
+        run: node tests/box-collapse.test.mjs
