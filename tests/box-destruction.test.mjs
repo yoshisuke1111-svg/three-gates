@@ -18,7 +18,7 @@ const outcomes=vm.runInContext([
   '  {id:"1a",n:"1",hp:100,maxHp:100,x:0,y:0},',
   '  {id:"2a",n:"0",hp:200,maxHp:200,x:1,y:0},',
   '  {id:"3a",n:"3",hp:200,maxHp:200,x:0,y:1},',
-  '  {id:"5",n:"2",hp:300,maxHp:300,x:1,y:1}',
+  '  {id:"5",n:"5",hp:300,maxHp:300,x:1,y:1}',
   '];',
   'var note={textContent:""};',
   'var shattered={shattered:false,classList:{add:function(name){if(name==="mg-piece-shattered")shattered.shattered=true;}}};',
@@ -78,7 +78,7 @@ const hiddenCode=src.slice(hiddenBegin,hiddenEnd);
 const repeat=vm.runInNewContext([
   'var hiddenTapCount=0,HP_TAPS=10,repeatFiveBreak=true,focusedHpId=null;',
   'var stageComplete=false,finished=false,triggered=0,draws=0,reveals=0;',
-  'var pieces=[{id:"5",n:"2",hp:1,maxHp:300,x:1,y:0},',
+  'var pieces=[{id:"5",n:"5",hp:1,maxHp:300,x:1,y:0},',
   '            {id:"1a",n:"1",hp:100,maxHp:100,x:0,y:0}];',
   'var note={textContent:""};',
   'var board={offsetWidth:320,classList:{remove:function(){},add:function(){}},',
@@ -109,7 +109,7 @@ const freshEnd=src.indexOf('    function snapshot() {',freshBegin);
 assert(freshBegin>0&&freshEnd>freshBegin);
 const fresh=vm.runInNewContext([
   'var repeatFiveBreak=true,INSET=.01;',
-  'function hpFor(type){return {"0":200,"1":100,"2":300,"3":200}[type]||0;}',
+  'function hpFor(type){return {"0":200,"1":100,"3":200,"5":300}[type]||0;}',
   'var levels=[{items:[["5",1,0,2,2],["1a",0,0,1,1]]}];',
   src.slice(freshBegin,freshEnd),
   'freshItems(0).map(p=>[p.id,p.hp,p.maxHp]);'
@@ -128,7 +128,7 @@ function freshPageWithOldFlags(){
   const local={three_gates_five_destroyed:'yes'};
   const session={three_gates_five_destroyed:'yes'};
   const browser={
-    url:'https://example.org/three-gates/?v=024&tg5=1#frag',
+    url:'https://example.org/three-gates/?v=025&tg5=1#frag',
     state:{threeGatesFiveDestroyed:true,other:'keep'}
   };
   return vm.runInNewContext([
@@ -159,13 +159,13 @@ assert.equal(freshSession.afterBreak,true,'One destruction switches next entry w
 assert.equal(freshSession.local.three_gates_five_destroyed,undefined,'Old local record removed');
 assert.equal(freshSession.session.three_gates_five_destroyed,undefined,'Old session record removed');
 assert(!freshSession.browser.url.includes('tg5='),'Old URL trap removed');
-assert(freshSession.browser.url.includes('v=024'),'Other URL parameters kept');
+assert(freshSession.browser.url.includes('v=025'),'Other URL parameters kept');
 assert.equal(freshSession.browser.state.other,'keep');
 assert.equal(freshSession.browser.state.threeGatesFiveDestroyed,undefined);
 
 const freshFirst=vm.runInNewContext([
   'var repeatFiveBreak=false,INSET=.01;',
-  'function hpFor(type){return {"0":200,"1":100,"2":300,"3":200}[type]||0;}',
+  'function hpFor(type){return {"0":200,"1":100,"3":200,"5":300}[type]||0;}',
   'var levels=[{items:[["5",1,0,2,2],["1a",0,0,1,1]]}];',
   src.slice(freshBegin,freshEnd),
   'freshItems(0).map(p=>[p.id,p.hp,p.maxHp]);'
