@@ -128,3 +128,28 @@
   min-height:0;
 }
 #mg-slide-board .mg-piece span{pointer-events:none}
+
+/* v0.12: make the box and its pieces easier to see and grab. */
+.mg-board-area{
+  width:min(100%,440px);
+  flex:0 1 440px;
+}
+#mg-slide-board{
+  max-width:100%;
+}
+#mg-slide-board .mg-piece{
+  border-width:3px;
+  border-radius:5px;
+}
+@media(max-width:720px){
+  .mg-board-area{
+    width:100%;
+    max-width:390px;
+    flex:0 1 100%;
+  }
+  #mg-slide-board{
+    width:100%;
+    max-width:100%;
+    margin:0 auto;
+  }
+}
