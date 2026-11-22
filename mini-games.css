@@ -89,3 +89,32 @@
 }
 #mg-slide-board .mg-piece-movable{cursor:grab}
 #mg-slide-board .mg-piece-blocked{cursor:default}
+
+/* Continuous free-form box dragging: no invisible grid and no snapping. */
+#mg-slide-board{
+  background-image:none;
+  background-color:#28231d;
+  background:radial-gradient(ellipse at 50% 25%,#3a3226 0%,#29241e 72%,#191919 100%);
+}
+#mg-slide-board::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  left:25%;
+  bottom:-6px;
+  height:7px;
+  width:50%;
+  background:#e6c17d;
+  box-shadow:0 0 16px #edc67d8a;
+}
+#mg-slide-board .mg-piece{
+  margin:0;
+  padding:0;
+  transition:none!important;
+  will-change:left,top;
+  cursor:grab;
+}
+#mg-slide-board .mg-piece.is-dragging{
+  cursor:grabbing;
+  transition:none!important;
+}
