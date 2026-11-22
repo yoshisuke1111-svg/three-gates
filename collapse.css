@@ -103,3 +103,88 @@
   .site.tg-corrupted .footer *{animation:none!important}
   .tg-debris-layer{display:none!important}
 }
+
+/* v0.19: the whole scene is NOT animated as one piece. Instead, actual
+   text words, board tiles and frames scatter independently, stop dead,
+   then fall in top-to-bottom order. */
+.site.tg-detached{visibility:hidden!important}
+.tg-debris-layer{
+  background:radial-gradient(ellipse at 50% 33%,#281b3a 0%,#100b18 55%,#05060a 100%);
+}
+.tg-debris-layer::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,#de37a023,#17dbca24,#e8a14128);
+  animation:tg-new-hues 1.7s steps(1,end) infinite;
+}
+.tg-debris-layer .tg-flight-piece{
+  animation:tg-swarm-flight 2.4s cubic-bezier(.4,-.2,.6,1.15) both!important;
+  transform-origin:50% 50%;
+  z-index:4;
+  overflow:visible!important;
+  max-width:none;
+}
+.tg-debris-layer .tg-word-piece{
+  z-index:8;
+  display:block;
+  white-space:nowrap!important;
+  color:var(--fly-color,#ff9fc7)!important;
+  text-shadow:-4px 2px #18ecf9,4px -2px #e03c89,0 0 14px #c9a5ff8c!important;
+  font-weight:600;
+  filter:saturate(1.4);
+}
+.tg-debris-layer .tg-frame-piece{
+  z-index:3;
+  color:transparent!important;
+  text-shadow:none!important;
+}
+.tg-debris-layer .tg-tile-piece{z-index:5}
+@keyframes tg-swarm-flight{
+  0%{opacity:1;transform:translate3d(0,0,0) rotate(0deg)}
+  13%{opacity:1;transform:translate3d(var(--fly-x1),var(--fly-y1),0) rotate(var(--fly-r1))}
+  30%{opacity:1;transform:translate3d(var(--fly-x2),var(--fly-y2),0) rotate(var(--fly-r2))}
+  45%{opacity:1;transform:translate3d(var(--fly-x3),var(--fly-y3),0) rotate(var(--fly-r3))}
+  59%{opacity:1;transform:translate3d(var(--fly-x1),var(--fly-y2),0) rotate(var(--fly-r2))}
+  73%{opacity:1;transform:translate3d(var(--fly-x2),var(--fly-y3),0) rotate(var(--fly-r1))}
+  85%,100%{
+    opacity:1;
+    transform:translate3d(var(--fly-stop-x),var(--fly-stop-y),0) rotate(var(--fly-stop-rot));
+  }
+}
+/* Abrupt motion stop: freeze every word on the same moment. */
+.tg-debris-layer.tg-frozen .tg-flight-piece{
+  animation-play-state:paused!important;
+}
+.tg-debris-layer .tg-debris-background{
+  visibility:hidden;
+  animation:none!important;
+}
+.tg-debris-layer.tg-dropping::before{
+  animation:none!important;
+  opacity:0;
+}
+.tg-debris-layer.tg-dropping .tg-flight-piece{
+  animation:tg-flight-crash var(--fall-time,1.25s)
+    cubic-bezier(.42,.0,.85,.7) var(--fall-delay,0ms) both!important;
+  animation-play-state:running!important;
+}
+.tg-debris-layer.tg-dropping .tg-debris-background{
+  visibility:visible;
+  opacity:1;
+  animation:tg-new-drop var(--fall-time,1.25s)
+    cubic-bezier(.4,.02,.88,.75) var(--fall-delay,0ms) both!important;
+}
+@keyframes tg-flight-crash{
+  0%{opacity:1;transform:translate3d(var(--fly-stop-x),var(--fly-stop-y),0) rotate(var(--fly-stop-rot))}
+  12%{opacity:1;transform:translate3d(var(--fly-stop-x),calc(var(--fly-stop-y) - 17px),0) rotate(var(--fly-stop-rot))}
+  32%{opacity:1;transform:translate3d(
+    calc(var(--fly-stop-x) + var(--fall-jolt)),
+    calc(var(--fly-stop-y) + 30px),0) rotate(18deg)}
+  100%{opacity:0;transform:translate3d(
+    calc(var(--fly-stop-x) + var(--fall-x)),
+    calc(var(--fly-stop-y) + 115vh),0) rotate(var(--fall-turn))}
+}
+@media(prefers-reduced-motion:reduce){
+  .tg-debris-layer .tg-flight-piece,
+  .tg-debris-layer.tg-dropping .tg-flight-piece{animation:none!important}
+  .tg-debris-layer{display:none!important}
+}
