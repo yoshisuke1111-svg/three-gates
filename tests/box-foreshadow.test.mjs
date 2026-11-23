@@ -61,7 +61,7 @@ for(const [label,file] of [['main site',index],['minigames',source]]){
     assert(!file.includes(rough),label+' still contains forceful wording: '+rough);
   }
 }
-assert(index.includes('mini-games.js?v=25')&&index.includes('mini-games.css?v=25'));
+assert(index.includes('mini-games.js?v=26')&&index.includes('mini-games.css?v=26'));
 // Relabeling must preserve the original ID, physical class, and HP.
 const freshStart=source.indexOf('    function freshItems(index) {',sliderStart);
 const freshEnd=source.indexOf('    function snapshot() {',freshStart);
