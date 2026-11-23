@@ -186,6 +186,6 @@ assert(css.includes('.tg-debris-layer.tg-frozen .tg-flight-piece'));
 assert(css.includes('.tg-debris-layer.tg-dropping .tg-flight-piece'));
 assert(css.includes('@keyframes tg-flight-crash'));
 assert(css.includes('@media(prefers-reduced-motion:reduce)'));
-assert(index.includes('collapse.js?v=25')&&index.includes('collapse.css?v=25'));
+assert(index.includes('collapse.js?v=26')&&index.includes('collapse.css?v=26'));
 
 console.log('Independent flying words, sudden freeze, separate top-down collapse, and cleanup passed.');
