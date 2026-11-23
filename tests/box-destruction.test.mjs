@@ -128,7 +128,7 @@ function freshPageWithOldFlags(){
   const local={three_gates_five_destroyed:'yes'};
   const session={three_gates_five_destroyed:'yes'};
   const browser={
-    url:'https://example.org/three-gates/?v=025&tg5=1#frag',
+    url:'https://example.org/three-gates/?v=026&tg5=1#frag',
     state:{threeGatesFiveDestroyed:true,other:'keep'}
   };
   return vm.runInNewContext([
@@ -159,7 +159,7 @@ assert.equal(freshSession.afterBreak,true,'One destruction switches next entry w
 assert.equal(freshSession.local.three_gates_five_destroyed,undefined,'Old local record removed');
 assert.equal(freshSession.session.three_gates_five_destroyed,undefined,'Old session record removed');
 assert(!freshSession.browser.url.includes('tg5='),'Old URL trap removed');
-assert(freshSession.browser.url.includes('v=025'),'Other URL parameters kept');
+assert(freshSession.browser.url.includes('v=026'),'Other URL parameters kept');
 assert.equal(freshSession.browser.state.other,'keep');
 assert.equal(freshSession.browser.state.threeGatesFiveDestroyed,undefined);
 
