@@ -58,6 +58,7 @@
     var stageComplete=false, finished=false, drag=null;
     var repeatFiveBreak=!!(options && options.instantFiveBreak);
     var hiddenTapCount=0, hiddenTap=null, HP_TAPS=repeatFiveBreak?10:30, focusedHpId=null;
+    var pointerClickGuard=null; // Avoid a synthetic click counting the same tap twice.
     root.innerHTML=
       '<div class="mg-slider-head"><span class="mg-slider-stage" id="mg-slide-stage"></span><span class="mg-slider-types" id="mg-slide-types"></span></div>'+
       '<h2 class="mg-slider-level-title" id="mg-slide-title"></h2>'+
@@ -186,6 +187,7 @@
     }
     function load(index) {
       hiddenTap=null;
+      pointerClickGuard=null;
       focusedHpId=null;
       levelIndex=index;
       pieces=freshItems(index);
@@ -356,11 +358,20 @@
       if(last){finished=true;win();}
     }
     function onClick(e) {
-      // Keyboard/assistive clicks have detail 0; physical clicks are already
-      // counted on pointerup to prevent double-counting.
-      if(e.detail===0 && e.target.closest("#mg-slide-board")){
-        var keyboardPiece=e.target.closest("[data-piece]");
-        handleBoardTap(keyboardPiece && keyboardPiece.dataset.piece);
+      // A browser may synthesize detail=0 after a touch pointerup. The HP
+      // tap was already counted at pointerup, so do not deal damage twice.
+      var insideBoard=e.target.closest("#mg-slide-board");
+      if(insideBoard && e.detail!==0)pointerClickGuard=null;
+      if(e.detail===0 && insideBoard){
+        var clicked=e.target.closest("[data-piece]");
+        var clickedId=(clicked && clicked.dataset.piece)||"";
+        if(pointerClickGuard && Date.now()-pointerClickGuard.at<750 &&
+           pointerClickGuard.pieceId===clickedId){
+          pointerClickGuard=null;
+        }else{
+          pointerClickGuard=null;
+          handleBoardTap(clickedId);
+        }
       }
       var act=e.target.closest("[data-act]");
       if(!act)return; // Tapping a piece never makes it jump.
@@ -377,6 +388,7 @@
       }
     }
     function onDown(e) {
+      pointerClickGuard=null;
       if(drag || stageComplete || finished || (e.pointerType==="mouse" && e.button!==0))return;
       // Track a short click on either a piece or the empty board, but never
       // interpret a drag as repeated taps.
@@ -450,6 +462,7 @@
     function onUp(e){
       var tap=null;
       if(hiddenTap && hiddenTap.pointerId===e.pointerId){
+        pointerClickGuard={at:Date.now(),pieceId:hiddenTap.pieceId||""};
         var travel=Math.hypot(e.clientX-hiddenTap.x,e.clientY-hiddenTap.y);
         if(travel<9 && (!drag || !drag.active) && !stageComplete && !finished){
           tap=hiddenTap.pieceId;
@@ -463,6 +476,7 @@
       if(tap!==null)handleBoardTap(tap);
     }
     function onCancel(e){
+      pointerClickGuard=null;
       if(hiddenTap && hiddenTap.pointerId===e.pointerId)hiddenTap=null;
       endDrag(e,true);
     }
